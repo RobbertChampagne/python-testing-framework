@@ -4,8 +4,12 @@
 
 import httpx
 import pytest
+import logging
 from jsonschema import validate
 from ...core.apis_info import ApiAbbreviation, apiUrls
+
+# Configure the logger
+logger = logging.getLogger(__name__)
 
 user_schema = {
     "type": "object",
@@ -20,7 +24,7 @@ user_schema = {
 }
 
 @pytest.mark.asyncio
-async def test_get_user():
+async def test_get_user(caplog):
     # Create an asynchronous HTTP client
     async with httpx.AsyncClient() as client:
         # Construct the URL for the API endpoint
@@ -41,5 +45,7 @@ async def test_get_user():
         # Validate the user data against the JSON schema
         validate(instance=user, schema=user_schema)
         
-        # Print the user data (for debugging purposes)
-        print(user)
+        # Log the user data (for capturing in the HTML report)
+        logger.info(f"User data: {user}")
+   
+        

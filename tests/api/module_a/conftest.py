@@ -3,9 +3,14 @@ import pytest
 import os
 from dotenv import load_dotenv
 from .setup.cognito_token import unlink_cognito_token, write_cognito_token
+from ..core.html_summary import pytest_html_results_summary
+from ..core.loggingSetup import setup_logging 
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Setup logging configuration
+setup_logging()
 
 # scope='session' means that the fixture is called once per test session.
 # If you don't specify a scope, the fixture will be called once per test function.
