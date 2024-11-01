@@ -14,9 +14,9 @@ def setup_logging():
     log_file_path = os.path.join(os.path.dirname(__file__), 'api_logging.log')
     
     # Clear the log file before adding new logs
+    # This is optional and can be removed if you want to append logs to the existing file
     with open(log_file_path, 'w'):
         pass
-    
     config['handlers']['file']['filename'] = log_file_path
     
     # Configure logging using the dictionary loaded from the JSON file

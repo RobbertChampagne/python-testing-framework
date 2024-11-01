@@ -9,7 +9,7 @@ from jsonschema import validate
 from ...core.apis_info import ApiAbbreviation, apiUrls
 
 # Configure the logger
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__) # __name__ is set to the module's name when it is executed
 
 user_schema = {
     "type": "object",
@@ -47,5 +47,3 @@ async def test_get_user(caplog):
         
         # Log the user data (for capturing in the HTML report)
         logger.info(f"User data: {user}")
-   
-        

@@ -162,7 +162,7 @@ Remember to place the `pytest.ini` file at the root of your project or in a loca
 
 #### HTML report configuration for this framework:
 
-`pytest.ini`<br>
+`pytest.ini` :<br>
 Specifies the HTML report output file:
 ```Python
 [pytest]
@@ -181,7 +181,7 @@ from ..core.html_summary import pytest_html_results_summary
 ```
 
 
-`html_summary.py`<br>
+`html_summary.py` :<br>
 Contains the custom HTML summary function for the pytest-html plugin.<br> This function adds environment information to the HTML report in a styled table format.
 ```Python
 import os
@@ -236,8 +236,9 @@ def pytest_html_results_summary(prefix, summary, postfix):
 
 The logging configuration is set up using a JSON file and a setup script.<br>
 This configuration ensures that logs are written to both the console and a file, and are also captured for inclusion in the HTML report.<br>
+(Remove the 'console' logger else the output will show twice inside of the HTML report.)
 
-`logging_config.json`
+`logging_config.json` :
 ```Python
 {
     "version": 1,
@@ -272,7 +273,7 @@ This configuration ensures that logs are written to both the console and a file,
     }
 }
 ```
-`loggingSetup.py`
+`loggingSetup.py` :
 ```Python
 import logging
 import logging.config
@@ -299,9 +300,9 @@ def setup_logging():
     logging.config.dictConfig(config) 
 ```
 
-`conftest.py`<br>
-In the **tests/api/module_a** directory contains fixtures and hooks for the test session.<br>
-It includes environment variable loading, asynchronous setup and teardown, logging setup, and custom HTML summary configuration.
+`conftest.py` :<br>
+The **tests/api/module_a** directory contains fixtures and hooks for the test session.<br>
+It includes environment variable loading, asynchronous setup and teardown, **logging setup**, and custom HTML summary configuration.
 
 ```Python
 from ..core.loggingSetup import setup_logging 
@@ -313,9 +314,26 @@ setup_logging()
 
 ```
 
-`html_summary.py`<br>
+`html_summary.py` :<br>
 In the **tests/api/core** directory contains the custom HTML summary function for the pytest-html plugin.<br>
 This function captures log output and adds it to the HTML report.
+
+**if report.when == 'call':**
+- This checks if the current phase of the test is the "call" phase.
+- The "call" phase is when the actual test function is executed. Other phases include "setup" and "teardown".
+- This ensures that the log messages are only added for the main execution phase of the test.
+
+**log_output = "\n".join(report.caplog):**
+- This line captures the log output generated during the test.
+- **report.caplog** is assumed to be a list of log messages (strings) captured by the caplog fixture.
+- **"\n".join(report.caplog)** joins all the log messages into a single string, with each message separated by a newline character (\n).
+
+**cells.append(html.div(log_output, class_='log'))**
+- This line adds the captured log output to the HTML report.
+- **html.div(log_output, class_='log')** creates a new HTML `<div>` element containing the log output.
+    - **log_output** is the string of joined log messages.
+    - **class_='log'** assigns the CSS class "log" to the `<div>` element, which can be used for styling purposes.
+- **cells.append(...)** adds this `<div>` element to the list of HTML cells for the current test row.
 
 ```Python
 ...
@@ -329,15 +347,82 @@ def pytest_html_results_table_row(report, cells):
 ...
 ```
 
-`test_get_user.py`<br>
+`test_get_user.py` :<br>
 The test uses the logger to log messages, which are captured by the caplog fixture and included in the HTML report.
+
+The caplog fixture is used to capture log messages generated during the execution of a test. Here’s how it works:
+
+1. **Capturing Logs**:
+    - The **caplog** fixture captures all log messages emitted during the test.
+    - It allows you to assert that certain log messages were generated, check their content, and include them in reports.
+
+2. **Accessing Captured Logs**:
+    - **caplog** provides several attributes and methods to access the captured log messages.
+    - **caplog.records**: A list of LogRecord objects for each captured log message.
+    - **caplog.text**: A string containing all captured log messages.
+    - **caplog.clear()**: Clears the captured log messages.
+
 ```Python
 import logging
 
 # Configure the logger
 logger = logging.getLogger(__name__)
 
+# Log the user data (for capturing in the HTML report)
+logger.info(f"User data: {user}")
+
 ...
 ```
+<br>
 
+`report.html` :<br>
+<img src="readme_images/logging1.html.png"  width="500"/>
 
+`api_logging.log` :
+```Log
+2024-11-01 07:40:52 - httpx - INFO - HTTP Request: GET https://reqres.in/api/users/8 "HTTP/1.1 200 OK"
+2024-11-01 07:40:52 - tests.api.module_a.tests.test_get_user - INFO - User data: {'id': 8, 'email': 'lindsay.ferguson@reqres.in', 'first_name': 'Lindsay', 'last_name': 'Ferguson', 'avatar': 'https://reqres.in/img/faces/8-image.jpg'}
+```
+
+---
+
+### Marks
+
+Pytest marks allow you to categorize your tests, making it easier to manage and execute subsets of your test suite based on certain criteria.
+
+`@pytest.mark.slow`:
+- **Purpose**: This mark is used to label tests that are slow to execute. You can use this mark to exclude or specifically include slow tests during test runs, optimizing your development workflow.<br>
+- **Example Usage**: Running only fast tests by excluding the slow ones with a command like `pytest -k "not slow"`.
+
+`@pytest.mark.xfail`:
+- **Purpose**: Marks a test that is expected to fail. This is useful when a known bug is present, and the test will pass once the bug is fixed.<br>
+- **Example Usage**: Allows the test suite to pass in a CI/CD pipeline despite the presence of a known failing test, without hiding the test failure.<br>
+    ```Python
+    @pytest.mark.xfail(reason="This test is expected to fail due to bug #123")
+    ```
+
+`@pytest.mark.skip`:
+- **Purpose**: Skips the execution of the marked test function. This is useful for tests that are not applicable under certain conditions or if a feature is not yet implemented.<br>
+- **Example Usage**: Temporarily disabling a test that relies on a feature not yet available in the development environment <br>
+    ```Python
+    @pytest.mark.skip(reason="Skipped because feature #456 is not yet implemented")
+    ```
+
+`@pytest.mark.custom_mark`:
+- **Purpose**: Demonstrates how to create a custom mark. Custom marks can be used to categorize tests in any way that suits your project's needs.<br>
+- **Example Usage**: Running a specific subset of tests tagged with a custom mark, like `pytest -m custom_mark`.<br>
+- To use custom marks in pytest, you need to register them in your pytest configuration file (usually pytest.ini).<br> This registration step is necessary to avoid warnings about unregistered marks.
+    ```Python
+    # pytest.ini
+    [pytest]
+    markers =
+        custom_mark: This is a custom mark with a message
+    ```
+    ```Python
+    @pytest.mark.custom_mark(reason="This is a custom mark with a message")
+    ```
+
+`@pytest.mark.parametrize`:
+- **Purpose**: Allows one to define multiple sets of arguments and expected results for a test function. Pytest will run the test function once for each set of arguments.<br>
+- **Example Usage**: Testing a function with various inputs to ensure it behaves as expected in different scenarios.<br>
+- **Attributes**: The parameters num, expected followed by a list of tuples, each representing a test case with an input (num) and the expected output (expected).
