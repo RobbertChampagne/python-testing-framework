@@ -1,4 +1,19 @@
+<a id="top"></a>
 # Python-testing-framework
+
+- [Virtual environments](#virtual)
+- [Running tests](#running)
+- [API Testing](#api)
+    - [Setup](#setup)
+    - [Hooks](#hooks)
+    - [Global fixtures](#global)
+    - [HTML report](#htmlreports)
+    - [Logging](#logging)
+    - [Marks](#marks)
+    - [Mocking](#mocking)
+
+
+<h1 id="virtual">Virtual environments:</h1>
 
 ### To install pytest, playwright, httpx, and more in your virtual environment, you can use the following commands:
 
@@ -41,10 +56,30 @@ pip install -r requirements.txt
 ```Bash
 dir /s /b activate
 ```
+[↑ Back to top](#top)
 
-# API Testing:
+<h1 id="running">Running tests:</h1>
 
-### Setup:
+Running all tests in a directory:
+```Bash
+pytest tests/api/module_a
+```
+
+Running all tests in a file:
+```Bash
+pytest tests/api/module_a/tests/test_marks.py 
+```
+
+Running a specific tests in a file:
+```Bash
+pytest tests/api/module_a/tests/test_marks.py::test_get_user_parametrize 
+```
+
+[↑ Back to top](#top)
+
+<h1 id="api">API Testing:</h1>
+
+<h3 id="setup">Setup:</h3>
 To ensure that your imports work correctly with pytest, you typically need to follow these steps:
 
 1. **Ensure `__init__.py` files are present**: Make sure that each directory in your package has an `__init__.py` file.<br> 
@@ -89,18 +124,21 @@ This file can be empty but is necessary for Python to recognize the directory as
     ```Bash
     pytest -s tests/api/module_a/tests/test_get_user.py --html=report.html
     ```
+[↑ Back to top](#top)
 
 ---
 
-### Global fixtures:
+<h3 id="global">Global fixtures:</h3>
 In pytest, you can create global fixtures by defining them in a file called `conftest.py`.<br>
 This file should be located in your project's root directory or in any directory containing tests.<br>
 Pytest will automatically discover `conftest.py` files and the fixtures defined in them,<br> 
 and these fixtures will be available to all tests in your project/folder.
 
+[↑ Back to top](#top)
+
 ---
 
-### Hooks:
+<h3 id="hooks">Hooks:</h3>
 Are special functions that pytest will automatically call at certain points during the testing process.<br><br>
 `def pytest_sessionstart(session):`<br>
 This function is a pytest hook that is automatically called once before any tests or test cases are run.
@@ -114,9 +152,11 @@ is a Session object that contains information about the testing session, such as
 The `exitstatus` parameter in `pytest_sessionfinish` is the exit status of the testing session,<br> 
 which can be used to determine if the tests passed or failed.
 
+[↑ Back to top](#top)
+
 ---
 
-### HTML reports:
+<h3 id="htmlreports">HTML reports:</h3>
 For generating HTML reports in pytest, the most commonly recommended tool is pytest-html.<br> 
 It is a plugin for pytest that generates a detailed HTML report for test sessions.<br> 
 This report includes the summary of the test outcomes, categorization of tests (passed, failed, skipped, etc.),<br> 
@@ -230,10 +270,10 @@ def pytest_html_results_summary(prefix, summary, postfix):
 ```
 <img src="readme_images/report2.html.png"  width="300"/>
 
+[↑ Back to top](#top)
+
 ---
-
-### Logging 
-
+<h3 id="logging">Logging:</h3>
 The logging configuration is set up using a JSON file and a setup script.<br>
 This configuration ensures that logs are written to both the console and a file, and are also captured for inclusion in the HTML report.<br>
 (Remove the 'console' logger else the output will show twice inside of the HTML report.)
@@ -384,10 +424,10 @@ logger.info(f"User data: {user}")
 2024-11-01 07:40:52 - tests.api.module_a.tests.test_get_user - INFO - User data: {'id': 8, 'email': 'lindsay.ferguson@reqres.in', 'first_name': 'Lindsay', 'last_name': 'Ferguson', 'avatar': 'https://reqres.in/img/faces/8-image.jpg'}
 ```
 
+[↑ Back to top](#top)
+
 ---
-
-### Marks
-
+<h3 id="marks">Marks:</h3>
 Pytest marks allow you to categorize your tests, making it easier to manage and execute subsets of your test suite based on certain criteria.
 
 `@pytest.mark.slow`:
@@ -425,4 +465,177 @@ Pytest marks allow you to categorize your tests, making it easier to manage and 
 `@pytest.mark.parametrize`:
 - **Purpose**: Allows one to define multiple sets of arguments and expected results for a test function. Pytest will run the test function once for each set of arguments.<br>
 - **Example Usage**: Testing a function with various inputs to ensure it behaves as expected in different scenarios.<br>
-- **Attributes**: The parameters num, expected followed by a list of tuples, each representing a test case with an input (num) and the expected output (expected).
+
+    ```Python
+    userIds = [1, 2]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('userId', userIds)
+    async def test_get_user_parametrize(userId, caplog):
+        # Create an asynchronous HTTP client
+        async with httpx.AsyncClient() as client:
+            # Construct the URL for the API endpoint
+            url = apiUrls[ApiAbbreviation.Reqres] + f"/users/{userId}"
+            
+            ...
+    ```
+
+    ```Python
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("userId, statusCode", [
+        (1, 200),
+        (2, 200)
+    ])
+    async def test_get_user_parametrize_two(userId, statusCode, caplog):
+        # Create an asynchronous HTTP client
+        async with httpx.AsyncClient() as client:
+            # Construct the URL for the API endpoint
+            url = apiUrls[ApiAbbreviation.Reqres] + f"/users/{userId}"
+            
+            # Make an asynchronous GET request to the API
+            response = await client.get(url)
+            
+            # Assert that the response status code is 200 (OK)
+            assert response.status_code == statusCode
+            
+            ...
+    ```
+
+`@pytest.mark.usefixtures`:
+- **Purpose**: Specifies fixtures to be used for a test function.
+   
+    ```Python
+    @pytest.fixture
+    def setup():
+        print("Setup")
+
+    @pytest.mark.usefixtures("setup")
+    def test_example():
+        assert True
+    ```
+    ```Bash
+    ---------------------------- Captured stdout setup -----------------------------
+    Setup
+    ```
+    
+`@pytest.mark.filterwarnings`:
+- **Purpose**: Filters warnings during test execution.
+   
+    ```Python
+    @pytest.mark.filterwarnings("ignore::DeprecationWarning")
+    def test_deprecated():
+        import warnings
+        warnings.warn("deprecated", DeprecationWarning)
+    ```
+    ```Bash
+    1 passed in 0.14s
+    ```
+    ---
+    ```Python
+    def test_deprecated():
+        import warnings
+        warnings.warn("deprecated", DeprecationWarning)
+    ```
+    ```Bash
+    DeprecationWarning: deprecated
+    ```
+
+[↑ Back to top](#top)
+
+---
+<h3 id="mocking">Mocking:</h3>
+Mocking is a powerful technique in testing, especially for API testing,<br> 
+where you might want to simulate responses from external services without making actual network requests.<br><br>
+
+
+**Mocking an API Response:**<br>
+
+Uses the patch function from the unittest.mock module to replace the get method of httpx.AsyncClient with the mock_get function.<br>
+This ensures that any calls to httpx.AsyncClient.get within this context will use the mocked response.
+```Python
+from unittest.mock import AsyncMock, patch
+
+@pytest.mark.asyncio
+async def test_get_user_mock():
+    async def mock_get(*args, **kwargs): # Takes any arguments and keyword arguments.
+        return httpx.Response( # Returns a mocked httpx.Response object
+            status_code=200,
+            json={"data": {"id": 1, "first_name": "John", "last_name": "Doe", "email": "john.doe@example.com"}}
+        )
+
+    with patch("httpx.AsyncClient.get", new=mock_get):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            assert response.status_code == 200
+            user = response.json()["data"]
+            logger.info(f"User data: {user}")
+            
+```
+
+**Mocking an API Response with a Delay:**<br>
+
+In this example, we'll mock an API response that includes a delay to simulate a slow network.
+```Python
+import asyncio
+
+...
+
+@pytest.mark.asyncio
+async def test_get_user_with_delay():
+    async def mock_get(*args, **kwargs):
+        await asyncio.sleep(4)  # Simulate network delay
+        return httpx.Response(
+            status_code=200,
+            json={"data": {"id": 1, "first_name": "John", "last_name": "Doe"}}
+        )
+
+...
+```
+
+**Mocking an API response with different status codes:**<br>
+
+Mock API responses with different status codes to test error handling.
+
+```Python
+@pytest.mark.asyncio
+async def test_get_user_not_found():
+    async def mock_get(*args, **kwargs):
+        return httpx.Response(status_code=404, json={"error": "User not found"})
+
+    with patch("httpx.AsyncClient.get", new=mock_get):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            assert response.status_code == 404
+            error = response.json()["error"]
+            assert error == "User not found"
+```
+
+**Mocking a POST Request:**<br>
+
+In this example, we'll mock a POST request to simulate creating a new user.
+
+```Python
+@pytest.mark.asyncio
+async def test_create_user():
+    async def mock_post(*args, **kwargs):
+        return httpx.Response(
+            status_code=201,
+            json={"name": "Jeff", "email": "jeff.doe@example.com"}
+        )
+
+    with patch("httpx.AsyncClient.post", new=mock_post):
+        async with httpx.AsyncClient() as client:
+            data = {"name": "John Doe", "email": "john.doe@example.com"}
+            response = await client.post("https://reqres.in/api/users", json=data)
+            assert response.status_code == 201
+            user = response.json()
+            assert user["name"] == "Jeff"
+            assert user["email"] == "jeff.doe@example.com"
+            logger.info(f"User data: {user}")
+```
+Output:
+```Bash
+User data: {'name': 'Jeff', 'email': 'jeff.doe@example.com'}
+```
+
+[↑ Back to top](#top)

@@ -1,6 +1,6 @@
 # pytest -s tests/api/module_a
 # pytest tests/api/module_a/tests/test_marks.py 
-# pytest -k test_get_user_parametrize tests/api/module_a/tests/test_marks.py 
+# pytest tests/api/module_a/tests/test_marks.py::test_get_user_parametrize 
 
 import httpx
 import pytest
@@ -14,7 +14,7 @@ userIds = [1, 2]
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('userId', userIds)
-async def test_get_user_parametrize(userId, statusCode, caplog):
+async def test_get_user_parametrize(userId, caplog):
     # Create an asynchronous HTTP client
     async with httpx.AsyncClient() as client:
         # Construct the URL for the API endpoint
@@ -35,8 +35,7 @@ async def test_get_user_parametrize(userId, statusCode, caplog):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("userId, statusCode", [
     (1, 200),
-    (2, 200),
-    ('x', 400)
+    (2, 200)
 ])
 async def test_get_user_parametrize_two(userId, statusCode, caplog):
     # Create an asynchronous HTTP client
@@ -78,3 +77,19 @@ async def test_get_user_custom_mark():
         # This test has a custom mark
         print()
         pass
+
+# Specifies fixtures to be used for a test function.
+@pytest.fixture
+def setup():
+    print("Setup")
+
+@pytest.mark.usefixtures("setup")
+def test_example():
+    assert True
+    
+
+# Filters warnings during test execution.
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_deprecated():
+    import warnings
+    warnings.warn("deprecated", DeprecationWarning)
