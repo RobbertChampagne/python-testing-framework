@@ -1,11 +1,12 @@
-# pytest -n 4 -s api_integration_testing/module_b --html=report.html
-# pytest -s --log-cli-level=INFO api_integration_testing/module_b/tests/test_post_vote.py --html=report.html
+# pytest -n 4 tests/api/module_b
+# pytest tests/api/module_b/tests/test_post_vote.py
 
 import httpx
 import pytest
 import logging
 from ..setup.get_image_id import get_image_id
 from ..setup.cognito_token import get_cognito_token
+from ...core.apis_info import ApiAbbreviation, apiUrls
 
 @pytest.mark.asyncio
 async def test_post_vote():
@@ -23,7 +24,7 @@ async def test_post_vote():
     }
     
     async with httpx.AsyncClient() as client:
-        url = "https://api.thecatapi.com/v1/votes"
+        url = apiUrls[ApiAbbreviation.TheCatApi] + "/votes"
         response = await client.post(url, headers=headers, json=data)
         assert response.status_code == 201
         logging.info("This is an info log message.")

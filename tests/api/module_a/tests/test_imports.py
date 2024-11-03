@@ -1,4 +1,4 @@
-# pytest -s api_integration_testing/module_a/tests/test_imports.py
+# pytest -s tests/api/module_a/tests/test_imports.py
   
 import pytest
 from ...core.apis_info import ApiAbbreviation, apiUrls

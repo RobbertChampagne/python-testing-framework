@@ -22,6 +22,19 @@ def env():
 def base_url(env):
     return f"https://{env}.website123.be"
 
+@pytest.fixture(scope="session", autouse=True)
+async def setup_temp_token():
+    # Setup code: runs before any tests
+    print("Session started")
+    await write_cognito_token()
+    
+    yield  # This is where the test code runs
+    
+    # Teardown code: runs after all tests
+    print("Session finished")
+    await unlink_cognito_token()
+    
+'''
 # Pytest hooks like pytest_sessionstart and pytest_sessionfinish do not support asynchronous functions directly.
 # You need to run the coroutine in the event loop manually.
 def run_async(async_func):
@@ -39,3 +52,4 @@ def pytest_sessionfinish(session, exitstatus):
     print("Session finished")
     # Run the asynchronous function to unlink the Cognito token
     run_async(unlink_cognito_token())
+'''

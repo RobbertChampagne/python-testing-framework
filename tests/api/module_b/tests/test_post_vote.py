@@ -1,4 +1,4 @@
-# pytest -n 4 -s module_b
+# pytest -n 4 tests/api/module_b
 # pytest -s tests/api/module_b/tests/test_post_vote.py 
 
 import httpx

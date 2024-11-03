@@ -5,7 +5,7 @@ import aiofiles
 # Load environment variables from .env file
 load_dotenv()
 
-token_file = "TEMP_TOKEN"
+token_file = "TEMP_TOKEN_MODULE_A"
 
 async def get_cognito_token():
     async with aiofiles.open(token_file, mode="r") as f:

@@ -11,6 +11,9 @@
     - [Logging](#logging)
     - [Marks](#marks)
     - [Mocking](#mocking)
+    - [Parallel](#parallel)
+    - [Exception handling](#exception)
+    
 
 
 <h1 id="virtual">Virtual environments:</h1>
@@ -129,16 +132,81 @@ This file can be empty but is necessary for Python to recognize the directory as
 ---
 
 <h3 id="global">Global fixtures:</h3>
+
 In pytest, you can create global fixtures by defining them in a file called `conftest.py`.<br>
 This file should be located in your project's root directory or in any directory containing tests.<br>
 Pytest will automatically discover `conftest.py` files and the fixtures defined in them,<br> 
 and these fixtures will be available to all tests in your project/folder.
+
+`conftest.py`
+```Python
+import pytest
+import os
+from dotenv import load_dotenv
+from .setup.cognito_token import unlink_cognito_token, write_cognito_token
+from ..core.html_summary import pytest_html_results_summary
+from ..core.loggingSetup import setup_logging 
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Setup logging configuration
+setup_logging()
+
+# scope='session' means that the fixture is called once per test session.
+# If you don't specify a scope, the fixture will be called once per test function.
+@pytest.fixture(scope="session")
+def env():
+    return os.getenv("ENVIRONMENT")
+
+@pytest.fixture(scope="session")
+def base_url(env):
+    return f"https://{env}.website123.be"
+
+@pytest.fixture(scope="session", autouse=True)
+async def setup_temp_token():
+    # Setup code: runs before any tests
+    print("Session started")
+    await write_cognito_token()
+    
+    yield  # This is where the test code runs
+    
+    # Teardown code: runs after all tests
+    print("Session finished")
+    await unlink_cognito_token()
+```
+`env()` & `base_url(env)`<br>
+Functions like these can be used inside the tests without importing them.
+module_a/tests/test_imports.py
+
+```Python
+# Example of using fixtures directly in a test function
+@pytest.mark.asyncio
+async def test_fetch_env_vars(env, base_url):
+    # env & base_url are automatically provided by the fixtures inside module_a\conftest.py
+    print(env)
+    print(base_url)
+```
+
+`setup_temp_token()`<br>
+The code before the yield statement runs before any tests.<br> 
+In this example, it prints "Session started" and runs the asynchronous function to write the Cognito token.<br>
+**yield**: This statement marks the point where the fixture's setup code ends and the test code begins.<br> 
+The test code runs after the yield statement.<br>
+**Teardown Code**: The code after the yield statement runs after all tests have completed.<br> 
+In this example, it prints "Session finished" and runs the asynchronous function to unlink the Cognito token.<br>
+
+**Recommendation**:<br>
+Using a fixture with **scope="session"** is generally recommended for managing setup and teardown in pytest, especially when dealing with asynchronous code.<br> 
+Fixtures provide a more flexible way to manage resources and dependencies, and they natively support asynchronous code when using pytest-asyncio.<br> 
+Not like: `pytest_sessionstart(session)` & `pytest_sessionfinish(session, exitstatus)`
 
 [↑ Back to top](#top)
 
 ---
 
 <h3 id="hooks">Hooks:</h3>
+
 Are special functions that pytest will automatically call at certain points during the testing process.<br><br>
 `def pytest_sessionstart(session):`<br>
 This function is a pytest hook that is automatically called once before any tests or test cases are run.
@@ -151,6 +219,27 @@ The `session` parameter in both `pytest_sessionstart` and `pytest_sessionfinish`
 is a Session object that contains information about the testing session, such as the tests that are being run and their status.<br>
 The `exitstatus` parameter in `pytest_sessionfinish` is the exit status of the testing session,<br> 
 which can be used to determine if the tests passed or failed.
+
+```Python
+# Pytest hooks like pytest_sessionstart and pytest_sessionfinish do not support asynchronous functions directly.
+# You need to run the coroutine in the event loop manually.
+def run_async(async_func):
+    # Run the asynchronous function in the event loop
+    asyncio.get_event_loop().run_until_complete(async_func)
+    
+def pytest_sessionstart(session):
+    # Hook that runs at the start of the test session
+    print("Session started")
+    # Run the asynchronous function to write the Cognito token
+    run_async(write_cognito_token())
+
+def pytest_sessionfinish(session, exitstatus):
+    # Hook that runs at the end of the test session
+    print("Session finished")
+    # Run the asynchronous function to unlink the Cognito token
+    run_async(unlink_cognito_token())
+```
+These functions will not work correctly when running in parallel please use the functions explained in: [Global fixtures](#global).
 
 [↑ Back to top](#top)
 
@@ -514,7 +603,7 @@ Pytest marks allow you to categorize your tests, making it easier to manage and 
         assert True
     ```
     ```Bash
-    ---------------------------- Captured stdout setup -----------------------------
+    ----------- Captured stdout setup -----------
     Setup
     ```
     
@@ -636,6 +725,150 @@ async def test_create_user():
 Output:
 ```Bash
 User data: {'name': 'Jeff', 'email': 'jeff.doe@example.com'}
+```
+
+[↑ Back to top](#top)
+
+---
+<h3 id="parallel">Parallel:</h3>
+
+To run tests in parallel across multiple modules using pytest, you can use the **pytest-xdist** plugin,<br>
+It uses the **multiprocessing** module to distribute tests across multiple CPUs.<br>
+This allows pytest to run tests in parallel, utilizing the available CPU cores on your machine to speed up test execution.<br>
+
+How **pytest-xdist** Works:
+- **Multiprocessing**: **pytest-xdist** leverages the **multiprocessing** module to create multiple worker processes.<br>
+Each worker process runs a subset of the tests, allowing tests to be executed in parallel.
+- **Local CPUs**: The worker processes are created on the local machine, utilizing the available CPU cores.<br>
+This means that the tests are distributed across the local CPUs, and each CPU core can run tests concurrently.
+
+**Steps to Run Tests in Parallel:**
+- **Install pytest-xdist**:
+    ```Bash
+    pip install pytest-xdist
+    ```
+- **Run all tests in parallel:** You can run tests in parallel using the -n option followed by the number of CPUs you want to use.<br> 
+For example, to run tests using 4 CPUs, you can use:
+    ```Bash
+    pytest -n 4
+    ```
+- **Specify the Directories:** To run all tests in the specified directories (module_a, module_b, and module_c),<br>
+To see the structure of the directories check the [setup](#setup) schema.<br>
+you can specify the directories in the pytest command:
+    ```Bash
+    pytest -n 4 tests/api/module_a tests/api/module_b tests/api/module_c
+    ```
+
+[↑ Back to top](#top)
+
+---
+
+<h3 id="exception">Exception handling:</h3>
+
+The term "exception handling" refers to the use of try, except, and finally blocks in Python to manage exceptions and ensure that specific code is executed whether an exception occurs or not. This approach helps make the code more robust and reliable by handling errors gracefully and performing necessary cleanup actions.
+
+The test case includes the creation of a temporary value, making an HTTP call with that value, and ensuring proper cleanup regardless of whether the call succeeds or fails.
+
+**Functions**
+1. `create_value()`:
+    - Asynchronously creates a temporary value.
+    - Prints a message indicating the value has been created.
+    - Returns the created value.
+2. `remove_value()`:
+    - Asynchronously removes the provided value.
+    - Prints a message indicating the value has been removed.
+3. `make_call_with_value()`:
+    - Asynchronously mocks an HTTP call using httpx.
+    - Returns a mocked httpx.Response object with a status code of 500 and a JSON payload.
+
+**Steps:**
+1. `Try`:
+    - Creates a temporary value using create_value.
+    - Makes an HTTP call with the created value using make_call_with_value.
+    - Asserts that the response status code is 200.
+    - Prints the response JSON if the call is successful.
+2. `Except`:
+    - Catches any exceptions that occur during the creation or call.
+    - Prints an error message.
+    - Re-raises the exception to ensure the test fails if an error occurs.
+3. `Finally`:
+    - Ensures the created value is removed using remove_value.
+    - Prints a message indicating cleanup is completed.
+
+```Python
+import httpx
+import pytest
+
+# Define a simple function to create a value
+async def create_value():
+    value = "temporary_value"
+    print(f"Value created: {value}")
+    return value
+
+# Define a simple function to remove a value
+async def remove_value(value):
+    print(f"Value removed: {value}")
+
+# Define a simple function to make a call with the value
+# Mocking an API response
+@pytest.mark.asyncio
+async def make_call_with_value(*args, **kwargs): # Takes any arguments and keyword arguments.
+    return httpx.Response( # Returns a mocked httpx.Response object
+        status_code=500,
+        json={"data": {"id": 1, "first_name": "John"}}
+    )
+
+@pytest.mark.asyncio
+async def test_create_and_use_value():
+    value = None
+    try:
+        # Create a value
+        value = await create_value()
+        
+        # Make a call with the created value
+        response = await make_call_with_value(value)
+        
+        # Check if the call was successful
+        assert response.status_code == 200
+        print("Call succeeded:", response.json())
+    
+    except Exception as e:
+        # Handle any exceptions that occur during the creation or call
+        # To trigger this exception, change the value of the status_code to 500
+        print("An error occurred:", e)
+        raise  # Re-raise the assertion error to fail the test
+    
+    finally:
+        # Remove the created value
+        if value is not None:
+            await remove_value(value)
+        print("Cleanup completed")
+```
+Output:
+```Bash
+---------- Captured stdout setup ----------
+Session started
+
+---------- Captured stdout call ----------
+Value created: temporary_value
+An error occurred: assert 500 == 200
+ +  where 500 = <Response [500 Internal Server Error]>.status_code
+Value removed: temporary_value
+Cleanup completed
+---------- Captured stdout teardown ----------
+Session finished
+```
+
+
+Use the **else** block for code that should run only if no exception occurs in the try block.
+```Python
+try:
+    # Code that may raise an exception
+    result = 10 / 2
+except ZeroDivisionError as e:
+    print("Cannot divide by zero:", e)
+else:
+    print("Division successful:", result)
 ```
 
 [↑ Back to top](#top)

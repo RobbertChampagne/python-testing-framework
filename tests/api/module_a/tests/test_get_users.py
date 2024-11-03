@@ -1,4 +1,4 @@
-# pytest -s api_integration_testing/module_a/tests/test_get_users.py
+# pytest -s tests/api/module_a/tests/test_get_users.py
 
 import httpx
 import pytest
