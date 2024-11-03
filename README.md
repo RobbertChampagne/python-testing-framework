@@ -78,6 +78,16 @@ Running a specific tests in a file:
 pytest tests/api/module_a/tests/test_marks.py::test_get_user_parametrize 
 ```
 
+Running a specific mark from a file:
+```Bash
+pytest tests/api/module_a/tests/test_marks.py -m custom_mark
+```
+
+Running all the marks from the project:
+```Bash
+pytest -m custom_mark
+```
+
 [↑ Back to top](#top)
 
 <h1 id="api">API Testing:</h1>
