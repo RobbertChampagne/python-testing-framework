@@ -1,4 +1,5 @@
 <a id="top"></a>
+
 # Python-testing-framework
 
 - [Virtual environments](#virtual)
@@ -16,7 +17,7 @@
    
 
 
-<h1 id="virtual">Virtual environments:</h1>
+# Virtual environments:
 
 ### To install pytest, playwright, httpx, and more in your virtual environment, you can use the following commands:
 
@@ -90,9 +91,9 @@ pytest -m custom_mark
 
 [↑ Back to top](#top)
 
-<h1 id="api">API Testing:</h1>
+# API Testing:
 
-<h3 id="setup">Setup:</h3>
+### Setup:
 To ensure that your imports work correctly with pytest, you typically need to follow these steps:
 
 1. **Ensure `__init__.py` files are present**: Make sure that each directory in your package has an `__init__.py` file.<br> 
@@ -141,7 +142,7 @@ This file can be empty but is necessary for Python to recognize the directory as
 
 ---
 
-<h3 id="global">Global fixtures:</h3>
+### Global fixtures:
 
 In pytest, you can create global fixtures by defining them in a file called `conftest.py`.<br>
 This file should be located in your project's root directory or in any directory containing tests.<br>
@@ -215,7 +216,7 @@ Not like: `pytest_sessionstart(session)` & `pytest_sessionfinish(session, exitst
 
 ---
 
-<h3 id="hooks">Hooks:</h3>
+### Hooks:
 
 Are special functions that pytest will automatically call at certain points during the testing process.<br><br>
 `def pytest_sessionstart(session):`<br>
@@ -255,7 +256,7 @@ These functions will not work correctly when running in parallel please use the 
 
 ---
 
-<h3 id="htmlreports">HTML reports:</h3>
+### HTML reports:
 For generating HTML reports in pytest, the most commonly recommended tool is pytest-html.<br> 
 It is a plugin for pytest that generates a detailed HTML report for test sessions.<br> 
 This report includes the summary of the test outcomes, categorization of tests (passed, failed, skipped, etc.),<br> 
@@ -372,7 +373,7 @@ def pytest_html_results_summary(prefix, summary, postfix):
 [↑ Back to top](#top)
 
 ---
-<h3 id="logging">Logging:</h3>
+### Logging:
 The logging configuration is set up using a JSON file and a setup script.<br>
 This configuration ensures that logs are written to both the console and a file, and are also captured for inclusion in the HTML report.<br>
 (Remove the 'console' logger else the output will show twice inside of the HTML report.)
@@ -526,7 +527,9 @@ logger.info(f"User data: {user}")
 [↑ Back to top](#top)
 
 ---
-<h3 id="marks">Marks:</h3>
+
+### Marks:
+
 Pytest marks allow you to categorize your tests, making it easier to manage and execute subsets of your test suite based on certain criteria.
 
 `@pytest.mark.slow`:
@@ -642,7 +645,9 @@ Pytest marks allow you to categorize your tests, making it easier to manage and 
 [↑ Back to top](#top)
 
 ---
-<h3 id="mocking">Mocking:</h3>
+
+### Mocking:
+
 Mocking is a powerful technique in testing, especially for API testing,<br> 
 where you might want to simulate responses from external services without making actual network requests.<br><br>
 
@@ -740,7 +745,8 @@ User data: {'name': 'Jeff', 'email': 'jeff.doe@example.com'}
 [↑ Back to top](#top)
 
 ---
-<h3 id="parallel">Parallel:</h3>
+
+### Parallel:
 
 To run tests in parallel across multiple modules using pytest, you can use the **pytest-xdist** plugin,<br>
 It uses the **multiprocessing** module to distribute tests across multiple CPUs.<br>
@@ -771,7 +777,7 @@ you can specify the directories in the pytest command:
 
 [↑ Back to top](#top)
 
-## Exception Handling <a name="exception-handling"></a>
+### Exception Handling 
 
 The term "exception handling" refers to the use of try, except, and finally blocks in Python to manage exceptions and ensure that specific code is executed whether an exception occurs or not. This approach helps make the code more robust and reliable by handling errors gracefully and performing necessary cleanup actions.
 
