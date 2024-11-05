@@ -15,17 +15,22 @@
 python -m venv python-testing-framework
 ```
 
-**Activate the Virtual Environment:**
+**Activate the virtual environment:**
 ```Bash
 python-testing-framework\Scripts\activate
 ```
 
-**Install Packages:**
+**Install packages:**
 ```Bash
 pip install pytest playwright httpx python-dotenv aiofiles pytest-html jsonschema pytest-asyncio
 ```
 
-**Install playwright Browsers:**
+**Install the playwright plugin:**
+```Bash
+pip install pytest-playwright
+```
+
+**Install playwright browsers:**
 ```Bash
 playwright install
 ```
@@ -35,7 +40,7 @@ playwright install
 pip freeze > requirements.txt
 ```
 
-**Done? -> Deactivate the Virtual Environment:**
+**Done? -> Deactivate the virtual environment:**
 ```Bash
 deactivate
 ```
@@ -875,3 +880,39 @@ else:
 ```
 
 [↑ Back to top](#top)
+
+# Playwright Testing
+
+### Setup
+To set up Pytest Playwright, you need to follow the standard setup for Pytest since Pytest Playwright is used as a plugin.<br> 
+This involves ensuring that your project structure is correctly configured and that necessary files are in place.<br>
+
+`pytest.ini` :<br>
+Add these options they are used to configure the behavior of Playwright when running tests with Pytest.
+
+- **--browser=firefox**<br>
+Specifies the browser to be used for running the tests.<br>
+In this case, it sets the browser to Firefox.<br>
+Playwright supports multiple browsers, including Chromium, Firefox, and WebKit. 
+
+- **--headed**<br>
+This option runs the browser in headed mode, meaning that the browser window will be visible during the test execution.<br>
+This is useful for debugging purposes, as you can see what is happening in the browser in real-time.<br>
+If you omit this option, the browser will run in headless mode by default, which means the browser window will not be visible.
+
+- **--tracing on**<br>
+This option enables tracing, which records a trace of your test execution.<br>
+Tracing can help you understand what happened during the test run by providing detailed information about the actions performed, network requests, and more.<br>
+This is particularly useful for debugging and analyzing test failures.
+
+```Python
+[pytest]
+
+...
+
+addopts =
+    --browser=firefox
+    --headed
+    --tracing on
+```
+

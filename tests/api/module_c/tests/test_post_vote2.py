@@ -1,5 +1,5 @@
-# pytest -n 4 tests/api/module_b
-# pytest tests/api/module_b/tests/test_post_vote.py
+# pytest -n 4 tests/api/module_c
+# pytest tests/api/module_c/tests/test_post_vote2.py
 
 import httpx
 import pytest
