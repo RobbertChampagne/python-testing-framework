@@ -1,25 +1,12 @@
 <a id="top"></a>
 
 # Python-testing-framework
-
-- [Virtual environments](#virtual)
-- [Running tests](#running)
-- [API Testing](#api)
-    - [Setup](#setup)
-    - [Hooks](#hooks)
-    - [Global fixtures](#global)
-    - [HTML report](#htmlreports)
-    - [Logging](#logging)
-    - [Marks](#marks)
-    - [Mocking](#mocking)
-    - [Parallel](#parallel)
-    - [Exception Handling](#exception-handling)
-   
-
+<img src="readme_images/playwright.svg"  width="150"/>
+<img src="readme_images/pytest.png"  width="150"/>
 
 # Virtual environments:
 
-### To install pytest, playwright, httpx, and more in your virtual environment, you can use the following commands:
+**To install pytest, playwright, httpx, and more in your virtual environment, you can use the following commands:**
 
 **Run the following command to create a virtual environment:**
 ```Bash
@@ -62,7 +49,7 @@ dir /s /b activate
 ```
 [↑ Back to top](#top)
 
-<h1 id="running">Running tests:</h1>
+# Running tests
 
 Running all tests in a directory:
 ```Bash
@@ -91,9 +78,9 @@ pytest -m custom_mark
 
 [↑ Back to top](#top)
 
-# API Testing:
+# API Testing
 
-### Setup:
+### Setup
 To ensure that your imports work correctly with pytest, you typically need to follow these steps:
 
 1. **Ensure `__init__.py` files are present**: Make sure that each directory in your package has an `__init__.py` file.<br> 
@@ -142,7 +129,7 @@ This file can be empty but is necessary for Python to recognize the directory as
 
 ---
 
-### Global fixtures:
+### Global fixtures
 
 In pytest, you can create global fixtures by defining them in a file called `conftest.py`.<br>
 This file should be located in your project's root directory or in any directory containing tests.<br>
@@ -216,7 +203,7 @@ Not like: `pytest_sessionstart(session)` & `pytest_sessionfinish(session, exitst
 
 ---
 
-### Hooks:
+### Hooks
 
 Are special functions that pytest will automatically call at certain points during the testing process.<br><br>
 `def pytest_sessionstart(session):`<br>
@@ -256,7 +243,7 @@ These functions will not work correctly when running in parallel please use the 
 
 ---
 
-### HTML reports:
+### HTML reports
 For generating HTML reports in pytest, the most commonly recommended tool is pytest-html.<br> 
 It is a plugin for pytest that generates a detailed HTML report for test sessions.<br> 
 This report includes the summary of the test outcomes, categorization of tests (passed, failed, skipped, etc.),<br> 
@@ -300,7 +287,7 @@ For options that cannot be directly included in the configuration file, like add
 
 Remember to place the `pytest.ini` file at the root of your project or in a location where pytest can automatically detect it.
 
-#### HTML report configuration for this framework:
+**HTML report configuration for this framework:**
 
 `pytest.ini` :<br>
 Specifies the HTML report output file:
@@ -373,7 +360,7 @@ def pytest_html_results_summary(prefix, summary, postfix):
 [↑ Back to top](#top)
 
 ---
-### Logging:
+### Logging
 The logging configuration is set up using a JSON file and a setup script.<br>
 This configuration ensures that logs are written to both the console and a file, and are also captured for inclusion in the HTML report.<br>
 (Remove the 'console' logger else the output will show twice inside of the HTML report.)
@@ -528,7 +515,7 @@ logger.info(f"User data: {user}")
 
 ---
 
-### Marks:
+### Marks
 
 Pytest marks allow you to categorize your tests, making it easier to manage and execute subsets of your test suite based on certain criteria.
 
@@ -646,7 +633,7 @@ Pytest marks allow you to categorize your tests, making it easier to manage and 
 
 ---
 
-### Mocking:
+### Mocking
 
 Mocking is a powerful technique in testing, especially for API testing,<br> 
 where you might want to simulate responses from external services without making actual network requests.<br><br>
@@ -746,7 +733,7 @@ User data: {'name': 'Jeff', 'email': 'jeff.doe@example.com'}
 
 ---
 
-### Parallel:
+### Parallel
 
 To run tests in parallel across multiple modules using pytest, you can use the **pytest-xdist** plugin,<br>
 It uses the **multiprocessing** module to distribute tests across multiple CPUs.<br>
