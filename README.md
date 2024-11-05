@@ -1,8 +1,10 @@
 <a id="top"></a>
 
 # Python-testing-framework
-<img src="readme_images/playwright.svg"  width="150"/>
-<img src="readme_images/pytest.png"  width="150"/>
+<div style="display: flex; align-items: center;">
+    <img src="readme_images/playwright.svg" width="150" style="margin-right: 10px;"/>
+    <img src="readme_images/pytest.png" width="150"/>
+</div>
 
 # Virtual environments:
 
