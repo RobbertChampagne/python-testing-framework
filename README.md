@@ -771,9 +771,9 @@ you can specify the directories in the pytest command:
 
 [↑ Back to top](#top)
 
----
 
-### Exception handling
+
+## Exception handling
 
 The term "exception handling" refers to the use of try, except, and finally blocks in Python to manage exceptions and ensure that specific code is executed whether an exception occurs or not. This approach helps make the code more robust and reliable by handling errors gracefully and performing necessary cleanup actions.
 
