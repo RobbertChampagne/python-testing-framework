@@ -22,6 +22,11 @@ def env():
 def base_url(env):
     return f"https://{env}.website123.be"
 
+# Hook to add a title to the HTML report
+@pytest.hookimpl(tryfirst=True)
+def pytest_html_report_title(report):
+    report.title = "Module A Tests"
+
 @pytest.fixture(scope="session", autouse=True)
 async def setup_temp_token():
     # Setup code: runs before any tests
@@ -33,7 +38,7 @@ async def setup_temp_token():
     # Teardown code: runs after all tests
     print("Session finished")
     await unlink_cognito_token()
-    
+
 '''
 # Pytest hooks like pytest_sessionstart and pytest_sessionfinish do not support asynchronous functions directly.
 # You need to run the coroutine in the event loop manually.

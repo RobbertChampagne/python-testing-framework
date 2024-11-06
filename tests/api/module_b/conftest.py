@@ -22,6 +22,11 @@ def env():
 def base_url(env):
     return f"https://{env}.website123.be"
 
+# Hook to add a title to the HTML report
+@pytest.hookimpl(tryfirst=True)
+def pytest_html_report_title(report):
+    report.title = "Module B Tests"
+
 @pytest.fixture(scope="session", autouse=True)
 async def setup_temp_token():
     # Setup code: runs before any tests
