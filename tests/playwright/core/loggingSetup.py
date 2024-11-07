@@ -15,8 +15,10 @@ def setup_logging():
     
     # Clear the log file before adding new logs
     # This is optional and can be removed if you want to append logs to the existing file
+    '''
     with open(log_file_path, 'w'):
         pass
+    '''
     config['handlers']['file']['filename'] = log_file_path
     
     # Configure logging using the dictionary loaded from the JSON file

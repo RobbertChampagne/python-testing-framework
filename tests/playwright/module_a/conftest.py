@@ -6,34 +6,33 @@ import os
 import logging
 import sys
 from pytest_html import extras
+from ..core.html_summary import pytest_html_results_summary
 from ..core.loggingSetup import setup_logging
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Setup logging configuration
 setup_logging()
 logger = logging.getLogger("Module A")
 
-@pytest.fixture(scope='session')
-def get_logger():
-    return logger
+# Load environment variables from .env file
+load_dotenv()
+url = os.getenv('URL_ONE', '')
 
 @pytest.fixture(scope="function")
-def page_context(get_logger):
+def page_context():
     
-    url = os.getenv('URL_ONE', '')
-    
-    logger = get_logger
     logger.info("Starting test_example")
     
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         context = browser.new_context()
+        
+        # Start tracing
+        context.tracing.start(screenshots=True, snapshots=True, sources=True)
+        
         page = context.new_page()
         page.goto(url)
         
-        yield page
+        yield page, context
         
         context.close()
         browser.close()
