@@ -4,6 +4,7 @@ from playwright.sync_api import Page, expect
 from ...core.loggingSetup import setup_logging
 import logging
 import os
+from ...core.utils import save_trace
 
 # Setup logging configuration
 logger = logging.getLogger("Module A")
@@ -20,7 +21,10 @@ def test_example(page_context: Page, jobtitle):
         
     finally:
         # Stop tracing and save it to a file
-        # python-testing-framework/tests/playwright/traces/module_a
-        trace_path = os.path.join(os.path.dirname(__file__), '..', '..', 'traces', 'module_a', 'trace_example.zip')
-        os.makedirs(os.path.dirname(trace_path), exist_ok=True)
-        context.tracing.stop(path=trace_path)
+        trace_name = 'trace_example.zip'
+        trace_dir_name = 'module_a'
+        save_trace(context, trace_dir_name, trace_name)
+        logger.info(f"Open trace: python -m playwright show-trace tests/playwright/traces/{trace_dir_name}/{trace_name}")
+        
+        
+        
