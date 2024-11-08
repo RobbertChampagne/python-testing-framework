@@ -10,14 +10,14 @@ from ...core.apis_info import ApiAbbreviation, apiUrls
 from unittest.mock import AsyncMock, patch
 
 # Configure the logger
-logger = logging.getLogger(__name__) # __name__ is set to the module's name when it is executed
+logger = logging.getLogger("Mocking") 
 
 # Construct the URL for the API endpoint
 url = apiUrls[ApiAbbreviation.Reqres] + "/users/8"
         
 # Real API call
 @pytest.mark.asyncio
-async def test_get_user(caplog):
+async def test_get_user():
     # Create an asynchronous HTTP client
     async with httpx.AsyncClient() as client:
         

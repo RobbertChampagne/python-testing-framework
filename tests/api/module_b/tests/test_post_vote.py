@@ -8,6 +8,9 @@ from ..setup.get_image_id import get_image_id
 from ..setup.cognito_token import get_cognito_token
 from ...core.apis_info import ApiAbbreviation, apiUrls
 
+# Setup logging configuration
+logger = logging.getLogger("post vote") 
+
 @pytest.mark.asyncio
 async def test_post_vote():
     image_id = await get_image_id()
@@ -27,4 +30,4 @@ async def test_post_vote():
         url = apiUrls[ApiAbbreviation.TheCatApi] + "/votes"
         response = await client.post(url, headers=headers, json=data)
         assert response.status_code == 201
-        logging.info("This is an info log message.")
+        logger.info("This is an info log message.")

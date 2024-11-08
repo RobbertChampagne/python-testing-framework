@@ -8,13 +8,13 @@ import logging
 from ...core.apis_info import ApiAbbreviation, apiUrls
 
 # Configure the logger
-logger = logging.getLogger(__name__) # __name__ is set to the module's name when it is executed
+logger = logging.getLogger("Marks") 
 
 userIds = [1, 2]
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('userId', userIds)
-async def test_get_user_parametrize(userId, caplog):
+async def test_get_user_parametrize(userId):
     # Create an asynchronous HTTP client
     async with httpx.AsyncClient() as client:
         # Construct the URL for the API endpoint
@@ -37,7 +37,7 @@ async def test_get_user_parametrize(userId, caplog):
     (1, 200),
     (2, 200)
 ])
-async def test_get_user_parametrize_two(userId, statusCode, caplog):
+async def test_get_user_parametrize_two(userId, statusCode):
     # Create an asynchronous HTTP client
     async with httpx.AsyncClient() as client:
         # Construct the URL for the API endpoint

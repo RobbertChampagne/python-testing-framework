@@ -8,13 +8,13 @@ import os
 # Setup logging configuration
 logger = logging.getLogger("Module A")
 
-def test_example(page_context: Page):
+def test_example(page_context: Page, jobtitle):
     try:
         logger.info("Starting test")
         
         page, context = page_context
         expect(page.locator("#header-container")).to_contain_text("Hello I'm Robbert")
-        expect(page.locator("#header-container")).to_contain_text("QA Engineer")
+        expect(page.locator("#header-container")).to_contain_text(jobtitle) # Use the jobtitle fixture
         expect(page.locator("#header-container")).to_contain_text("Ensuring Software Quality Through Automation, Communication, and Process Improvement.")
         expect(page.locator("#skills-section")).to_contain_text("Always a Student, Never a Master: Embracing Never Ending Learning.")
         

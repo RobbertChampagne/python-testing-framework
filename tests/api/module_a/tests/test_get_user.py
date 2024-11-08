@@ -1,6 +1,6 @@
 # '-n 4' This option is provided by the pytest-xdist plugin, which allows you to run tests in parallel. 
-# pytest -n 4 -s tests/api/module_a --html=report.html
-# pytest -s tests/api/module_a/tests/test_get_user.py --html=report.html
+# pytest -n 4 -s tests/api/module_a
+# pytest -s tests/api/module_a/tests/test_get_user.py
 
 import httpx
 import pytest
@@ -8,8 +8,8 @@ import logging
 from jsonschema import validate
 from ...core.apis_info import ApiAbbreviation, apiUrls
 
-# Configure the logger
-logger = logging.getLogger(__name__) # __name__ is set to the module's name when it is executed
+# Setup logging configuration
+logger = logging.getLogger("get user") 
 
 user_schema = {
     "type": "object",
@@ -24,7 +24,7 @@ user_schema = {
 }
 
 @pytest.mark.asyncio
-async def test_get_user(caplog):
+async def test_get_user():
     # Create an asynchronous HTTP client
     async with httpx.AsyncClient() as client:
         # Construct the URL for the API endpoint

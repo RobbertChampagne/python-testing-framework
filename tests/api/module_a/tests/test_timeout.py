@@ -9,7 +9,7 @@ import asyncio
 from ...core.apis_info import ApiAbbreviation, apiUrls
 
 # Configure the logger
-logger = logging.getLogger(__name__) # __name__ is set to the module's name when it is executed
+logger = logging.getLogger("Timeout Test")
 
 @pytest.mark.asyncio
 async def test_sleep():

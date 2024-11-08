@@ -5,12 +5,14 @@ from dotenv import load_dotenv
 from .setup.cognito_token import unlink_cognito_token, write_cognito_token
 from ..core.html_summary import pytest_html_results_summary
 from ..core.loggingSetup import setup_logging 
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Setup logging configuration
 setup_logging()
+logger = logging.getLogger("API Module A")
 
 # scope='session' means that the fixture is called once per test session.
 # If you don't specify a scope, the fixture will be called once per test function.
@@ -25,18 +27,18 @@ def base_url(env):
 # Hook to add a title to the HTML report
 @pytest.hookimpl(tryfirst=True)
 def pytest_html_report_title(report):
-    report.title = "Module A Tests"
+    report.title = "API Module A Tests"
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_temp_token():
     # Setup code: runs before any tests
-    print("Session started")
+    logger.info("Starting session")
     await write_cognito_token()
     
     yield  # This is where the test code runs
     
     # Teardown code: runs after all tests
-    print("Session finished")
+    logger.info("Session finished")
     await unlink_cognito_token()
 
 '''

@@ -104,6 +104,10 @@ This file can be empty but is necessary for Python to recognize the directory as
     │   │   │
     │   │   ├── core/
     │   │   │   ├── __init__.py
+    │   │   │   ├── api_logging.log
+    │   │   │   ├── html_summary.py
+    │   │   │   ├── logging_config.json
+    │   │   │   ├── loggingSetup.py
     │   │   │   └── apis_info.py
     │   │   │
     │   │   ├── module_a/
@@ -151,12 +155,14 @@ from dotenv import load_dotenv
 from .setup.cognito_token import unlink_cognito_token, write_cognito_token
 from ..core.html_summary import pytest_html_results_summary
 from ..core.loggingSetup import setup_logging 
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Setup logging configuration
 setup_logging()
+logger = logging.getLogger("API Module A")
 
 # scope='session' means that the fixture is called once per test session.
 # If you don't specify a scope, the fixture will be called once per test function.
@@ -179,6 +185,11 @@ async def setup_temp_token():
     # Teardown code: runs after all tests
     print("Session finished")
     await unlink_cognito_token()
+
+# Hook to add a title to the HTML report
+@pytest.hookimpl(tryfirst=True)
+def pytest_html_report_title(report):
+    report.title = "API Module A Tests"
 ```
 `env()` & `base_url(env)`<br>
 Functions like these can be used inside the tests without importing them.
@@ -425,6 +436,7 @@ def setup_logging():
     log_file_path = os.path.join(os.path.dirname(__file__), 'api_logging.log')
     
     # Clear the log file before adding new logs
+    # This is optional and can be removed if you want to append logs to the existing file
     with open(log_file_path, 'w'):
         pass
     
@@ -435,72 +447,22 @@ def setup_logging():
 ```
 
 `conftest.py` :<br>
-The **tests/api/module_a** directory contains fixtures and hooks for the test session.<br>
-It includes environment variable loading, asynchronous setup and teardown, **logging setup**, and custom HTML summary configuration.
-
 ```Python
 from ..core.loggingSetup import setup_logging 
 
 # Setup logging configuration
 setup_logging()
-
+logger = logging.getLogger("API Module A")
 ...
 
 ```
-
-`html_summary.py` :<br>
-In the **tests/api/core** directory contains the custom HTML summary function for the pytest-html plugin.<br>
-This function captures log output and adds it to the HTML report.
-
-**if report.when == 'call':**
-- This checks if the current phase of the test is the "call" phase.
-- The "call" phase is when the actual test function is executed. Other phases include "setup" and "teardown".
-- This ensures that the log messages are only added for the main execution phase of the test.
-
-**log_output = "\n".join(report.caplog):**
-- This line captures the log output generated during the test.
-- **report.caplog** is assumed to be a list of log messages (strings) captured by the caplog fixture.
-- **"\n".join(report.caplog)** joins all the log messages into a single string, with each message separated by a newline character (\n).
-
-**cells.append(html.div(log_output, class_='log'))**
-- This line adds the captured log output to the HTML report.
-- **html.div(log_output, class_='log')** creates a new HTML `<div>` element containing the log output.
-    - **log_output** is the string of joined log messages.
-    - **class_='log'** assigns the CSS class "log" to the `<div>` element, which can be used for styling purposes.
-- **cells.append(...)** adds this `<div>` element to the list of HTML cells for the current test row.
-
-```Python
-...
-
-def pytest_html_results_table_row(report, cells):
-    if report.when == 'call':
-        # Add captured log output to the HTML report
-        log_output = "\n".join(report.caplog)
-        cells.append(html.div(log_output, class_='log'))
-
-...
-```
-
 `test_get_user.py` :<br>
-The test uses the logger to log messages, which are captured by the caplog fixture and included in the HTML report.
-
-The caplog fixture is used to capture log messages generated during the execution of a test. Here’s how it works:
-
-1. **Capturing Logs**:
-    - The **caplog** fixture captures all log messages emitted during the test.
-    - It allows you to assert that certain log messages were generated, check their content, and include them in reports.
-
-2. **Accessing Captured Logs**:
-    - **caplog** provides several attributes and methods to access the captured log messages.
-    - **caplog.records**: A list of LogRecord objects for each captured log message.
-    - **caplog.text**: A string containing all captured log messages.
-    - **caplog.clear()**: Clears the captured log messages.
 
 ```Python
 import logging
 
-# Configure the logger
-logger = logging.getLogger(__name__)
+# Setup logging configuration
+logger = logging.getLogger("get user") 
 
 # Log the user data (for capturing in the HTML report)
 logger.info(f"User data: {user}")
@@ -509,13 +471,15 @@ logger.info(f"User data: {user}")
 ```
 <br>
 
-`report.html` :<br>
-<img src="readme_images/logging1.html.png"  width="500"/>
+`report.html` :<br><br>
+<img src="readme_images/logging1.html.png"  width="600"/>
 
 `api_logging.log` :
 ```Log
-2024-11-01 07:40:52 - httpx - INFO - HTTP Request: GET https://reqres.in/api/users/8 "HTTP/1.1 200 OK"
-2024-11-01 07:40:52 - tests.api.module_a.tests.test_get_user - INFO - User data: {'id': 8, 'email': 'lindsay.ferguson@reqres.in', 'first_name': 'Lindsay', 'last_name': 'Ferguson', 'avatar': 'https://reqres.in/img/faces/8-image.jpg'}
+2024-11-08 07:19:26 - API Module A - INFO - Starting session
+2024-11-08 07:19:27 - httpx - INFO - HTTP Request: GET https://reqres.in/api/users/8 "HTTP/1.1 200 OK"
+2024-11-08 07:19:27 - get user - INFO - User data: {'id': 8, 'email': 'lindsay.ferguson@reqres.in', 'first_name': 'Lindsay', 'last_name': 'Ferguson', 'avatar': 'https://reqres.in/img/faces/8-image.jpg'}
+2024-11-08 07:19:27 - API Module A - INFO - Session finished
 ```
 
 [↑ Back to top](#top)

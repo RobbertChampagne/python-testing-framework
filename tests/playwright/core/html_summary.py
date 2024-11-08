@@ -45,8 +45,3 @@ def pytest_html_results_summary(prefix, summary, postfix):
     # Add custom content to postfix
     postfix.extend([("End of Summary")])
 
-def pytest_html_results_table_row(report, cells):
-    if report.when == 'call':
-        # Add captured log output to the HTML report
-        log_output = "\n".join(report.caplog)
-        cells.append(html.div(log_output, class_='log'))

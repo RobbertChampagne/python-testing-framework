@@ -2,16 +2,20 @@
 
 import httpx
 import pytest
+import logging
+
+# Setup logging configuration
+logger = logging.getLogger("Exception handling") 
 
 # Define a simple function to create a value
 async def create_value():
     value = "temporary_value"
-    print(f"Value created: {value}")
+    logger.info(f"Value created: {value}")
     return value
 
 # Define a simple function to remove a value
 async def remove_value(value):
-    print(f"Value removed: {value}")
+    logger.info(f"Value removed: {value}")
 
 # Define a simple function to make a call with the value
 # Mocking an API response
@@ -34,16 +38,16 @@ async def test_create_and_use_value():
         
         # Check if the call was successful
         assert response.status_code == 200
-        print("Call succeeded:", response.json())
+        logger.info("Call succeeded:", response.json())
     
     except Exception as e:
         # Handle any exceptions that occur during the creation or call
         # To trigger this exception, change the value of the status_code to 500
-        print("An error occurred:", e)
+        logger.info("An error occurred:", e)
         raise  # Re-raise the assertion error to fail the test
     
     finally:
         # Remove the created value
         if value is not None:
             await remove_value(value)
-        print("Cleanup completed")
+        logger.info("Cleanup completed")
