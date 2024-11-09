@@ -8,19 +8,20 @@ import sys
 from pytest_html import extras
 from ..core.html_summary import pytest_html_results_summary
 from ..core.loggingSetup import setup_logging
-from ..core.browser_utils import select_browser
+from ..core.auth_utils import ensure_auth_state
 
 # Setup logging configuration
 setup_logging()
-logger = logging.getLogger("Playwright Module A")
+logger = logging.getLogger("Playwright Module B")
 
 # Load environment variables from .env file
 load_dotenv()
-url = os.getenv('URL_ONE', '')
+user = os.getenv('SWAGLABS_USER_ONE')
+password = os.getenv('SWAGLABS_PASSWORD')
+url = os.getenv('SWAGLABS_URL')
 
-@pytest.fixture(scope="session")
-def jobtitle():
-    return os.getenv("JOBTITLE")
+# Define the path for state.json file
+state_path = os.path.join(os.path.dirname(__file__), 'setup', 'state.json')
 
 @pytest.fixture(scope="function")
 def page_context(pytestconfig):
@@ -30,26 +31,17 @@ def page_context(pytestconfig):
     # Get browser name and headless option from pytest configuration
     browser_name = pytestconfig.getoption("browser")
     headless = not pytestconfig.getoption("headed")
-
+    
     # Use Playwright to launch the browser and create a new context
     with sync_playwright() as p:
-        # Select and launch the specified browser
-        browser = select_browser(p, browser_name[0], headless)
         
-        # To override the browser selection from the pytest.ini file and launch a specific browser, 
-        # use the following code:
-        # browser = p.chromium.launch(headless=False)
-        
-        # Create a new browser context (similar to a new incognito window)
-        context = browser.new_context()
+        # Ensure the authentication state is valid
+        context = ensure_auth_state(p, browser_name, headless, url, user, password, state_path)
+        page = context.new_page()
         
         # Start tracing to capture screenshots, snapshots, and sources
         context.tracing.start(screenshots=True, snapshots=True, sources=True)
         
-        # Create a new page (tab) in the browser context
-        page = context.new_page()
-        
-        # Navigate to the specified URL
         page.goto(url)
         
         # Yield the page and context to the test function
@@ -57,7 +49,7 @@ def page_context(pytestconfig):
         
         # Close the browser context and browser after the test is done
         context.close()
-        browser.close()
+        context.browser.close()
         
 # Hook to add a title to the HTML report
 @pytest.hookimpl(tryfirst=True)

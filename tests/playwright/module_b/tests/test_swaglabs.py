@@ -1,4 +1,4 @@
-# pytest tests/playwright/module_a/tests/test_text.py
+# pytest tests/playwright/module_b/tests/test_swaglabs.py
 
 from playwright.sync_api import Page, expect
 from ...core.loggingSetup import setup_logging
@@ -7,9 +7,9 @@ import os
 from ...core.utils import save_trace
 
 # Setup logging configuration
-logger = logging.getLogger("Module A")
+logger = logging.getLogger("Module B")
 
-def test_example(page_context: Page, jobtitle):
+def test_example(page_context):
     try:
         # Log the start of the test
         logger.info("Starting test")
@@ -18,15 +18,14 @@ def test_example(page_context: Page, jobtitle):
         page, context = page_context
         
         # Perform assertions on the page content
-        expect(page.locator("#header-container")).to_contain_text("Hello I'm Robbert")
-        expect(page.locator("#header-container")).to_contain_text(jobtitle) # Use the jobtitle fixture
-        expect(page.locator("#header-container")).to_contain_text("Ensuring Software Quality Through Automation, Communication, and Process Improvement.")
-        expect(page.locator("#skills-section")).to_contain_text("Always a Student, Never a Master: Embracing Never Ending Learning.")
+        expect(page.locator("[data-test=\"title\"]")).to_contain_text("Products")
+        page.locator("[data-test=\"add-to-cart-sauce-labs-backpack\"]").click()
+        page.locator("[data-test=\"add-to-cart-sauce-labs-bike-light\"]").click()
         
     finally:
         # Stop tracing and save it to a file
         trace_name = 'trace_example.zip'
-        trace_dir_name = 'module_a'
+        trace_dir_name = 'module_b'
         save_trace(context, trace_dir_name, trace_name)
         
         # Log the location of the trace file

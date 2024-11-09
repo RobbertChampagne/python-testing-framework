@@ -864,11 +864,6 @@ This option runs the browser in headed mode, meaning that the browser window wil
 This is useful for debugging purposes, as you can see what is happening in the browser in real-time.<br>
 If you omit this option, the browser will run in headless mode by default, which means the browser window will not be visible.
 
-- **--tracing on**<br>
-This option enables tracing, which records a trace of your test execution.<br>
-Tracing can help you understand what happened during the test run by providing detailed information about the actions performed, network requests, and more.<br>
-This is particularly useful for debugging and analyzing test failures.
-
 ```Python
 [pytest]
 
@@ -877,6 +872,230 @@ This is particularly useful for debugging and analyzing test failures.
 addopts =
     --browser=firefox
     --headed
-    --tracing on
 ```
+
+[↑ Back to top](#top)
+
+### Playwright browser sessions
+
+**What config to use?**
+
+In your test setup, you can have the following line, this line explicitly launches a Chromium browser in non-headless mode:<br> 
+
+`conftest.py`
+```Python
+browser = p.chromium.launch(headless=False)
+```
+
+In your `pytest.ini` file, you can have the following configuration.<br> 
+The **--browser=firefox** option suggests that Firefox should be used as the browser.
+
+```Python
+addopts =
+    --html=report.html
+    --browser=firefox
+    --headed
+```
+
+Since your test code explicitly launches a Chromium browser with **p.chromium.launch(headless=False)**, this will take precedence over the `pytest.ini` configuration.
+
+If you want to make the browser configurable via `pytest.ini`, you can modify your test setup to read the browser option from the pytest configuration:
+
+`browser_utils.py`
+```Python
+from playwright.sync_api import Playwright
+
+def select_browser(playwright: Playwright, browser_name: str, headless: bool):
+    """
+    Select and launch the specified browser.
+
+    Args:
+        playwright (Playwright): The Playwright instance.
+        browser_name (str): The name of the browser to launch (chromium, firefox, webkit).
+        headless (bool): Whether to launch the browser in headless mode.
+
+    Returns:
+        Browser: The launched browser instance.
+    """
+    if browser_name == "firefox":
+        return playwright.firefox.launch(headless=headless)
+    elif browser_name == "webkit":
+        return playwright.webkit.launch(headless=headless)
+    else:
+        return playwright.chromium.launch(headless=headless)
+```
+
+`conftest.py`
+```Python
+from ..core.browser_utils import select_browser
+
+...
+
+@pytest.fixture(scope="function")
+def page_context(pytestconfig):
+    
+    # Get browser name and headless option from pytest configuration
+    browser_name = pytestconfig.getoption("browser")
+    headless = not pytestconfig.getoption("headed")
+    
+    # Use Playwright to launch the browser and create a new context
+    with sync_playwright() as p:
+        
+        # Select and launch the specified browser
+        browser = select_browser(p, browser_name[0], headless)
+        
+        # To override the browser selection from the pytest.ini file and launch a specific browser, 
+        # use the following code:
+        # browser = p.chromium.launch(headless=False)
+        ...
+```
+**Full flow:**<br> 
+The page_context fixture is a Pytest fixture that sets up and tears down a Playwright browser session for each test function.<br> 
+This fixture is responsible for launching a browser, creating a new browser context, starting tracing, and navigating to a specified URL.<br> 
+It yields the page and context to the test function, allowing the test to interact with the page.<br> 
+After the test is done, it closes the browser context and the browser.
+
+`conftest.py`
+```Python
+@pytest.fixture(scope="function")
+def page_context(pytestconfig):
+    # Log the start of the session
+    logger.info("Starting session")
+    
+    # Get browser name and headless option from pytest configuration
+    browser_name = pytestconfig.getoption("browser")
+    headless = not pytestconfig.getoption("headed")
+    
+    # Use Playwright to launch the browser and create a new context
+    with sync_playwright() as p:
+        
+        # Select and launch the specified browser
+        browser = select_browser(p, browser_name[0], headless)
+        
+        # To override the browser selection from the pytest.ini file and launch a specific browser, 
+        # use the following code:
+        # browser = p.chromium.launch(headless=False)
+        
+        # Create a new browser context (similar to a new incognito window)
+        context = browser.new_context()
+        
+        # Start tracing to capture screenshots, snapshots, and sources
+        context.tracing.start(screenshots=True, snapshots=True, sources=True)
+        
+        # Create a new page (tab) in the browser context
+        page = context.new_page()
+        
+        # Navigate to the specified URL
+        page.goto(url)
+        
+        # Yield the page and context to the test function
+        yield page, context
+        
+        # Close the browser context and browser after the test is done
+        context.close()
+        browser.close()
+```
+
+**Passing the Page Context and Working with Pages**<br>
+In this test, the page_context fixture is used to set up and tear down a Playwright browser session.<br> 
+The fixture yields a page and context object, which are then used in the test to interact with the web page and perform assertions.<br>
+
+`test_text.py`
+```Python
+def test_example(page_context: Page, jobtitle):
+    try:
+        # Log the start of the test
+        logger.info("Starting test")
+        
+        # Unpack the page and context from the fixture
+        page, context = page_context
+        
+        # Perform assertions on the page content
+        expect(page.locator("#header-container")).to_contain_text("Hello I'm Robbert")
+        expect(page.locator("#header-container")).to_contain_text(jobtitle) # Use the jobtitle fixture
+        expect(page.locator("#header-container")).to_contain_text("Ensuring Software Quality Through Automation, Communication, and Process Improvement.")
+        expect(page.locator("#skills-section")).to_contain_text("Always a Student, Never a Master: Embracing Never Ending Learning.")
+        
+    finally:
+        # Stop tracing and save it to a file
+        trace_name = 'trace_example.zip'
+        trace_dir_name = 'module_a'
+        save_trace(context, trace_dir_name, trace_name)
+        
+        # Log the location of the trace file
+        logger.info(f"Open trace: playwright show-trace tests/playwright/traces/{trace_dir_name}/{trace_name}")
+```
+
+[↑ Back to top](#top)
+
+### Trace viewer
+Playwright Trace Viewer is a GUI tool that lets you explore recorded Playwright traces of your tests<br> 
+meaning you can go back and forward though each action of your test and visually see what was happening during each action.<br>
+
+`conftest.py`
+```Python
+...
+        
+# Start tracing to capture screenshots, snapshots, and sources
+context.tracing.start(screenshots=True, snapshots=True, sources=True)
+        
+...
+```
+
+`utils.py`
+```Python
+def get_trace_dir(trace_dir_name):
+    # Construct the absolute path to the trace directory
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'traces', trace_dir_name))
+
+def save_trace(context, trace_dir_name, trace_name):
+    # Get the absolute path to the trace directory
+    trace_dir = get_trace_dir(trace_dir_name)
+    
+    # Construct the full path to the trace file
+    trace_path = os.path.join(trace_dir, trace_name)
+    
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(trace_path), exist_ok=True)
+    
+    # Stop tracing and save the trace to the specified file
+    context.tracing.stop(path=trace_path)
+```
+
+`test_text.py`
+```Python
+def test_example(page_context: Page):
+    try:
+        ...
+
+        # Unpack the page and context from the fixture
+        page, context = page_context
+        
+        ...
+        
+    finally:
+        # Stop tracing and save it to a file
+        trace_name = 'trace_example.zip'
+        trace_dir_name = 'module_a'
+        save_trace(context, trace_dir_name, trace_name)
+        
+        # Log the location of the trace file
+        logger.info(f"Open trace: playwright show-trace tests/playwright/traces/{trace_dir_name}/{trace_name}")
+```
+
+**Open the trace:**
+```Bash
+playwright show-trace tests/playwright/traces/module_a/trace_example.zip
+```
+
+<img src="readme_images/trace.png"  width="500"/>
+
+[↑ Back to top](#top)
+
+### Authentication
+Tests can load existing authenticated state.<br> 
+This eliminates the need to authenticate in every test and speeds up test execution.<br>
+
+# Define the path for state.json file
+state_path = "./setup/state.json"
 
