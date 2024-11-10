@@ -745,6 +745,8 @@ you can specify the directories in the pytest command:
 
 [↑ Back to top](#top)
 
+---
+
 ### Exception Handling 
 
 The term "exception handling" refers to the use of try, except, and finally blocks in Python to manage exceptions and ensure that specific code is executed whether an exception occurs or not. This approach helps make the code more robust and reliable by handling errors gracefully and performing necessary cleanup actions.
@@ -885,6 +887,8 @@ addopts =
 ```
 
 [↑ Back to top](#top)
+
+---
 
 ### Playwright browser sessions
 
@@ -1038,6 +1042,8 @@ def test_example(page_context: Page, jobtitle):
 
 [↑ Back to top](#top)
 
+---
+
 ### Trace viewer
 Playwright Trace Viewer is a GUI tool that lets you explore recorded Playwright traces of your tests<br> 
 meaning you can go back and forward though each action of your test and visually see what was happening during each action.<br>
@@ -1101,6 +1107,8 @@ playwright show-trace tests/playwright/traces/module_a/trace_example.zip
 <img src="readme_images/trace.png"  width="500"/>
 
 [↑ Back to top](#top)
+
+---
 
 ### Authentication
 In `module B`, tests can load an existing authenticated state, eliminating the need to authenticate in every test and speeding up test execution.<br> 
@@ -1219,3 +1227,6 @@ def ensure_auth_state(playwright: Playwright, browser_name: str, headless: bool,
     
     return context
 ```
+[↑ Back to top](#top)
+
+---
