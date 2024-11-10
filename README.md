@@ -83,6 +83,16 @@ Running all the marks from the project:
 pytest -m custom_mark
 ```
 
+Codegen:
+```Bash
+playwright codegen https://robbertchampagne.com/
+```
+
+Trace viewer:
+```Bash
+playwright show-trace tests/playwright/traces/module_b/trace_example.zip
+```
+
 [↑ Back to top](#top)
 
 # API Testing
@@ -950,7 +960,7 @@ def page_context(pytestconfig):
         ...
 ```
 **Full flow:**<br> 
-The page_context fixture is a Pytest fixture that sets up and tears down a Playwright browser session for each test function.<br> 
+The **page_context** fixture is a Pytest fixture that sets up and tears down a Playwright browser session for each test function.<br> 
 This fixture is responsible for launching a browser, creating a new browser context, starting tracing, and navigating to a specified URL.<br> 
 It yields the page and context to the test function, allowing the test to interact with the page.<br> 
 After the test is done, it closes the browser context and the browser.
@@ -1093,9 +1103,119 @@ playwright show-trace tests/playwright/traces/module_a/trace_example.zip
 [↑ Back to top](#top)
 
 ### Authentication
-Tests can load existing authenticated state.<br> 
-This eliminates the need to authenticate in every test and speeds up test execution.<br>
+In `module B`, tests can load an existing authenticated state, eliminating the need to authenticate in every test and speeding up test execution.<br> 
+This is achieved using a combination of `conftest.py` and `auth_utils.py`.
+
+ `conftest.py`<br> 
+ Defines a fixture **page_context** that ensures the browser is launched with a valid authenticated state.<br> 
+ This fixture uses the **ensure_auth_state** function from `auth_utils.py` to check and maintain the authentication state.
+```Python
+from ..core.auth_utils import ensure_auth_state
+
+# Setup logging configuration
+setup_logging()
+logger = logging.getLogger("Playwright Module B")
+
+# Load environment variables from .env file
+load_dotenv()
+user = os.getenv('SWAGLABS_USER_ONE')
+password = os.getenv('SWAGLABS_PASSWORD')
+url = os.getenv('SWAGLABS_URL')
 
 # Define the path for state.json file
-state_path = "./setup/state.json"
+state_path = os.path.join(os.path.dirname(__file__), 'setup', 'state.json')
 
+@pytest.fixture(scope="function")
+def page_context(pytestconfig):
+    # Log the start of the session
+    logger.info("Starting session")
+    
+    # Get browser name and headless option from pytest configuration
+    browser_name = pytestconfig.getoption("browser")
+    headless = not pytestconfig.getoption("headed")
+    
+    # Use Playwright to launch the browser and create a new context
+    with sync_playwright() as p:
+        
+        # Ensure the authentication state is valid
+        context = ensure_auth_state(p, browser_name, headless, url, user, password, state_path)
+        page = context.new_page()
+        
+        # Start tracing to capture screenshots, snapshots, and sources
+        context.tracing.start(screenshots=True, snapshots=True, sources=True)
+        
+        page.goto(url)
+        
+        # Yield the page and context to the test function
+        yield page, context
+        
+        # Close the browser context and browser after the test is done
+        context.close()
+        context.browser.close()
+```
+
+ `auth_utils.py`<br>
+Contains the **ensure_auth_state** function, which ensures that the browser context is authenticated.<br>
+If the authentication state is valid, it reuses the existing state.<br> 
+If the state is invalid or expired, it performs the login steps and saves the new state.
+```Python
+from playwright.sync_api import Browser, BrowserContext, Page, Playwright, expect
+from .browser_utils import select_browser
+
+def ensure_auth_state(playwright: Playwright, browser_name: str, headless: bool, url: str, username: str, password: str, state_path: str) -> BrowserContext:
+    """
+    Ensure the authentication state is valid. If not, re-login and save the state.
+
+    Args:
+        playwright (Playwright): The Playwright instance.
+        browser_name (str): The name of the browser to launch (chromium, firefox, webkit).
+        headless (bool): Whether to launch the browser in headless mode.
+        url (str): The URL to navigate to.
+        username (str): The username for login.
+        password (str): The password for login.
+        state_path (str): The path to the state.json file.
+
+    Returns:
+        BrowserContext: The browser context with the valid authentication state.
+    """
+    # Create a headless browser for the authentication check
+    headless_browser = select_browser(playwright, browser_name, True)
+    
+    # To override the browser selection from the pytest.ini file and launch a specific browser, 
+    # use the following code:
+    # browser = p.chromium.launch(headless=True)
+        
+    try:
+        # Use the saved state.json for the browser context
+        context = headless_browser.new_context(storage_state=state_path)
+        page = context.new_page()
+        page.goto(url)
+        # Perform a simple check to ensure the state is valid
+        expect(page.locator("[data-test=\"title\"]")).to_contain_text("Products")
+        page.close()  # Close the initial page after the check
+        context.close()  # Close the headless context
+        headless_browser.close()  # Close the headless browser
+        # Create a new context for the actual test
+        browser = select_browser(playwright, browser_name, headless)
+        return browser.new_context(storage_state=state_path)  # Return the context immediately if the state is valid
+           
+    except Exception as e:
+        logging.warning(f"State is invalid or expired: {e}. Recreating state.json.")
+        # If an exception occurs, delete the state.json file and perform login steps
+        if os.path.exists(state_path):
+            os.remove(state_path)
+            
+        browser = select_browser(playwright, browser_name, headless)
+        context = browser.new_context()
+        page = context.new_page()
+        page.goto(url)
+        page.locator("[data-test=\"username\"]").fill(username)
+        page.locator("[data-test=\"password\"]").fill(password)
+        page.locator("[data-test=\"login-button\"]").click()
+
+        # Save the logged-in state to state.json
+        context.storage_state(path=state_path)
+        page.close()  # Close the initial page after the check
+    
+    return context
+```
