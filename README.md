@@ -82,6 +82,15 @@ Running all the marks from the project:
 ```Bash
 pytest -m custom_mark
 ```
+Running mobile emulation:
+```Bash
+pytest tests/playwright/module_a/tests/test_text.py --device="Galaxy S9+"
+```
+
+Running tests on a browser other than the one specified in the `pytest.ini` file:
+```Bash
+pytest tests/playwright/module_a/tests/test_text.py --browser=webkit  
+```
 
 Codegen:
 ```Bash
@@ -864,7 +873,7 @@ To set up Pytest Playwright, you need to follow the standard setup for Pytest si
 This involves ensuring that your project structure is correctly configured and that necessary files are in place.<br>
 
 `pytest.ini` :<br>
-Add these options they are used to configure the behavior of Playwright when running tests with Pytest.
+Add these options, they are used to configure the behavior of Playwright when running tests with Pytest.
 
 - **--browser=firefox**<br>
 Specifies the browser to be used for running the tests.<br>
@@ -890,20 +899,12 @@ addopts =
 
 ---
 
-### Playwright browser sessions
+### Playwright Browser Management and Device Emulation:
 
-**What config to use?**
+The browser management and device emulation are configured through a combination of command-line options and/or settings in the `pytest.ini` file.<br>
+**Command-line options will take precedence over the `pytest.ini` configuration.**
 
-In your test setup, you can have the following line, this line explicitly launches a Chromium browser in non-headless mode:<br> 
-
-`conftest.py`
-```Python
-browser = p.chromium.launch(headless=False)
-```
-
-In your `pytest.ini` file, you can have the following configuration.<br> 
-The **--browser=firefox** option suggests that Firefox should be used as the browser.
-
+In your `pytest.ini` file, you can have the following default configurations.<br> 
 ```Python
 addopts =
     --html=report.html
@@ -911,9 +912,7 @@ addopts =
     --headed
 ```
 
-Since your test code explicitly launches a Chromium browser with **p.chromium.launch(headless=False)**, this will take precedence over the `pytest.ini` configuration.
-
-If you want to make the browser configurable via `pytest.ini`, you can modify your test setup to read the browser option from the pytest configuration:
+Run on the chosen browser:
 
 `browser_utils.py`
 ```Python
@@ -939,32 +938,26 @@ def select_browser(playwright: Playwright, browser_name: str, headless: bool):
         return playwright.chromium.launch(headless=headless)
 ```
 
-`conftest.py`
-```Python
-from ..core.browser_utils import select_browser
+The **page_context** fixture handles the browser management.<br>
+It retrieves the browser name, headless mode, and device from the pytest configuration.<br>
+The browser name is determined by the last specified value, ensuring that command-line options take precedence over the pytest.ini file settings.<br> 
 
-...
+- **Command-Line Options**:
+    - **--browser**: Specifies the browser to use (e.g., chromium, firefox, webkit).
+    - **--headed**: Runs the browser in headed mode (with a visible UI).
+    - **--device**: Specifies the device to emulate (e.g., iPhone 13, Galaxy S9+).
 
-@pytest.fixture(scope="function")
-def page_context(pytestconfig):
-    
-    # Get browser name and headless option from pytest configuration
-    browser_name = pytestconfig.getoption("browser")
-    headless = not pytestconfig.getoption("headed")
-    
-    # Use Playwright to launch the browser and create a new context
-    with sync_playwright() as p:
-        
-        # Select and launch the specified browser
-        browser = select_browser(p, browser_name[0], headless)
-        
-        # To override the browser selection from the pytest.ini file and launch a specific browser, 
-        # use the following code:
-        # browser = p.chromium.launch(headless=False)
-        ...
+- **Handling Mobile Emulation**:
+    - If a device is specified and the browser is Firefox, the fixture switches to Chromium, as Firefox does not support mobile emulation.
+    - The fixture then creates a new browser context with the specified device configuration if the browser supports mobile emulation (Chromium or WebKit).
+
+To run tests on a browser other than the one specified in the `pytest.ini` file, use the **--browser** command-line option.<br>
+For example, to run tests on Chromium with the Galaxy S9+ device emulation, use the following command:
+```Bash
+pytest tests/playwright/module_a/tests/test_text.py --browser=chromium --device="Galaxy S9+"
 ```
-**Full flow:**<br> 
-The **page_context** fixture is a Pytest fixture that sets up and tears down a Playwright browser session for each test function.<br> 
+
+Also the **page_context** fixture is a Pytest fixture that sets up and tears down a Playwright browser session for each test function.<br> 
 This fixture is responsible for launching a browser, creating a new browser context, starting tracing, and navigating to a specified URL.<br> 
 It yields the page and context to the test function, allowing the test to interact with the page.<br> 
 After the test is done, it closes the browser context and the browser.
@@ -976,22 +969,43 @@ def page_context(pytestconfig):
     # Log the start of the session
     logger.info("Starting session")
     
-    # Get browser name and headless option from pytest configuration
+    # Get options from pytest configuration
     browser_name = pytestconfig.getoption("browser")
     headless = not pytestconfig.getoption("headed")
+    device = pytestconfig.getoption("--device")
+    
+    # Use the last specified browser so that command line options take precedence over pytest.ini
+    browser_name = browser_name[-1]
+    
+    logger.info(f"Browser specified: {browser_name}")
+    logger.info(f"Headless mode: {headless}")
+    logger.info(f"Device specified: {device}")
     
     # Use Playwright to launch the browser and create a new context
     with sync_playwright() as p:
         
-        # Select and launch the specified browser
-        browser = select_browser(p, browser_name[0], headless)
+        # Check if a device is specified and the browser supports mobile emulation
+        if device and browser_name == "firefox":
+            logger.info("Firefox does not support mobile emulation. Switching to Chromium.")
+            browser_name = "chromium"
+            browser = p.chromium.launch(headless=headless)
+        else:
+            # Select and launch the specified browser
+            browser = select_browser(p, browser_name, headless)
         
         # To override the browser selection from the pytest.ini file and launch a specific browser, 
         # use the following code:
         # browser = p.chromium.launch(headless=False)
         
-        # Create a new browser context (similar to a new incognito window)
-        context = browser.new_context()
+        # Check if a device is specified and the browser supports mobile emulation
+        if device and browser_name in ["chromium", "webkit"]:
+            device_config = p.devices[device]
+            context = browser.new_context(**device_config)
+        else:
+            # Create a new browser context (similar to a new incognito window)
+            context = browser.new_context()
+        
+        logger.info(f"Launching {browser_name} browser")
         
         # Start tracing to capture screenshots, snapshots, and sources
         context.tracing.start(screenshots=True, snapshots=True, sources=True)
@@ -1011,7 +1025,7 @@ def page_context(pytestconfig):
 ```
 
 **Passing the Page Context and Working with Pages**<br>
-In this test, the page_context fixture is used to set up and tear down a Playwright browser session.<br> 
+In this test, the **page_context** fixture is used to set up and tear down a Playwright browser session.<br> 
 The fixture yields a page and context object, which are then used in the test to interact with the web page and perform assertions.<br>
 
 `test_text.py`
@@ -1038,6 +1052,218 @@ def test_example(page_context: Page, jobtitle):
         
         # Log the location of the trace file
         logger.info(f"Open trace: playwright show-trace tests/playwright/traces/{trace_dir_name}/{trace_name}")
+```
+
+The **pytestconfig** fixture provides access to the pytest configuration, allowing you to retrieve command-line options and use them inside your tests.
+
+Conditionally skip a test based on the **--device** command-line option:
+
+`test_text.py`
+```Python
+def test_example_2(page_context: Page, pytestconfig):
+    
+    device = pytestconfig.getoption("--device")
+    if device == "Galaxy S9+":
+        pytest.skip("Skipping test for Galaxy S9+")
+        
+    ...
+```
+
+[↑ Back to top](#top)
+
+---
+
+### Playwright Browser Management with Authentication and Device Emulation:
+
+1. **Authentication Handling**:
+    - The **ensure_auth_state** function ensures that the authentication state is valid.<br> 
+    If not, it performs the login steps and saves the state to a file (`state.json`).
+
+2. **Mobile Emulation**:
+    - The setup supports mobile emulation by specifying a device using the **--device** command-line option.<br>
+    The browser context is configured to use the specified device and the saved authentication state.
+
+3. **Tracing**:
+    - Tracing is enabled for both authentication and test execution.<br>
+    Traces are saved to files for debugging purposes.
+
+`conftest.py` (module_b)
+```Python
+# Define the path for state.json file
+state_path = os.path.join(os.path.dirname(__file__), 'setup', 'state.json')
+
+@pytest.fixture(scope="session")
+def browser_context(pytestconfig):
+    # Log the start of the session
+    logger.info("Starting session")
+    
+    # Get options from pytest configuration
+    browser_name = pytestconfig.getoption("browser")
+    headless = not pytestconfig.getoption("headed")
+    device = pytestconfig.getoption("--device")
+    
+    # Use the last specified browser so that command line options take precedence over pytest.ini
+    browser_name = browser_name[-1]
+    
+    logger.info(f"Browser specified: {browser_name}")
+    logger.info(f"Headless mode: {headless}")
+    logger.info(f"Device specified: {device}")
+    
+    # Use Playwright to launch the browser and create a new context
+    with sync_playwright() as p:
+        
+        # Check if a device is specified and the browser supports mobile emulation
+        if device and browser_name == "firefox":
+            logger.info("Firefox does not support mobile emulation. Switching to Chromium.")
+            browser_name = "chromium"
+        
+        # Select and launch the specified browser
+        browser = select_browser(p, browser_name, headless)
+            
+        # Ensure the authentication state is valid
+        context = ensure_auth_state(p, browser_name, headless, url, user, password, state_path)
+        
+        # Check if a device is specified and the browser supports mobile emulation
+        if device and browser_name in ["chromium", "webkit"]:
+            device_config = p.devices[device]
+            context = browser.new_context(**device_config, storage_state=state_path)
+            
+        logger.info(f"Launching {browser_name} browser")
+        
+        # Yield the context to the test functions
+        yield context
+        
+        # Close the browser context and browser after the test is done
+        context.close()
+        browser.close()
+        
+@pytest.fixture(scope="function")
+def page_context(browser_context, request):
+    # Create a new page in the browser context
+    page = browser_context.new_page()
+    
+    # Start tracing to capture screenshots, snapshots, and sources
+    browser_context.tracing.start(screenshots=True, snapshots=True, sources=True)
+    
+    # Navigate to the specified URL
+    page.goto(url)
+    
+    # Yield the page to the test function
+    yield page
+    
+    # Stop tracing and save the trace
+    test_name = request.node.name
+    save_trace(browser_context, "module_b", f"trace_{test_name}.zip")
+    
+    # Close the page after the test function is done
+    page.close()
+```
+
+`auth_utils.py` 
+```Python
+def ensure_auth_state(playwright: Playwright, browser_name: str, headless: bool, url: str, username: str, password: str, state_path: str) -> BrowserContext:
+
+    trace_name = 'auth.zip'
+    trace_dir_name = 'module_b'
+        
+    # Create a headless browser for the authentication check (set to True)
+    headless_browser = select_browser(playwright, browser_name, False)
+    
+    try:
+        # Use the saved state.json for the browser context
+        context = headless_browser.new_context(storage_state=state_path)
+        page = context.new_page()
+        
+        # Start tracing for authentication
+        context.tracing.start(screenshots=True, snapshots=True, sources=True)
+        
+        page.goto(url)
+        
+        # Perform a simple check to ensure the state is valid
+        try:
+            expect(page.locator("[data-test=\"title\"]")).to_contain_text("Products", timeout=5000)
+            page.close()  # Close the initial page after the check
+            save_trace(context, trace_dir_name, trace_name) # Stop tracing and save the trace
+            context.close()  # Close the headless context
+            headless_browser.close()  # Close the headless browser
+            # Create a new context for the actual test
+            browser = select_browser(playwright, browser_name, headless)
+            return browser.new_context(storage_state=state_path)  # Return the context immediately if the state is valid
+        except TimeoutError:
+            logging.warning("State is invalid or expired. Recreating state.json.")
+            raise Exception("State is invalid or expired.")
+        
+    except Exception as e:
+        logging.warning(f"State is invalid or expired: {e}. Recreating state.json.")
+        # If an exception occurs, delete the state.json file and perform login steps
+        if os.path.exists(state_path):
+            os.remove(state_path)
+            
+        # Reuse the initially created headless browser
+        context = headless_browser.new_context()
+        page = context.new_page()
+        
+        # Start tracing for authentication
+        context.tracing.start(screenshots=True, snapshots=True, sources=True)
+        
+        page.goto(url)
+        page.locator("[data-test=\"username\"]").fill(username)
+        page.locator("[data-test=\"password\"]").fill(password)
+        page.locator("[data-test=\"login-button\"]").click()
+        
+        # Navigate to the inventory page after login
+        page.goto(f"{url}/inventory.html")
+
+        # Stop tracing and save the trace
+        save_trace(context, trace_dir_name, trace_name)
+
+        # Save the logged-in state to state.json
+        context.storage_state(path=state_path)
+        page.close()  # Close the initial page after the check
+    
+    return context
+```
+
+`test_swaglabs.py` 
+```Python
+def test_example(page_context):
+    try:
+        # Log the start of the test
+        logger.info("Starting test")
+        
+        # Unpack the page and context from the fixture
+        page = page_context
+        
+        # Perform assertions on the page content
+        expect(page.locator("[data-test=\"title\"]")).to_contain_text("Products")
+        page.locator("[data-test=\"add-to-cart-sauce-labs-backpack\"]").click()
+        page.locator("[data-test=\"add-to-cart-sauce-labs-bike-light\"]").click()
+        
+    finally:
+        # Log the location of the trace file
+        logger.info(f"Open trace: playwright show-trace tests/playwright/traces/module_b/trace_test_example.zip")
+
+
+def test_example2(page_context, pytestconfig):
+    device = pytestconfig.getoption("--device")
+    if device == "Galaxy S9+":
+        pytest.skip("Skipping test for Galaxy S9+")
+       
+    try:
+        # Log the start of the test
+        logger.info("Starting test")
+        
+        # Unpack the page and context from the fixture
+        page = page_context
+        
+        # Perform assertions on the page content
+        expect(page.locator("[data-test=\"title\"]")).to_contain_text("Products")
+        page.locator("[data-test=\"add-to-cart-sauce-labs-bolt-t-shirt\"]").click()
+        
+    finally:
+        # Log the location of the trace file
+        logger.info(f"Open trace: playwright show-trace tests/playwright/traces/module_b/trace_test_example2.zip")
+     
 ```
 
 [↑ Back to top](#top)

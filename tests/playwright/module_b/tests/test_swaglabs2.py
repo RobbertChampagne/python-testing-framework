@@ -1,4 +1,7 @@
-# pytest tests/playwright/module_b/tests/test_swaglabs.py
+# pytest tests/playwright/module_b/tests/test_swaglabs2.py
+# pytest tests/playwright/module_b/tests/test_swaglabs2.py --device="iPhone 13"
+# pytest tests/playwright/module_b/tests/test_swaglabs2.py --device="Galaxy S9+"
+# pytest tests/playwright/module_b/tests/test_swaglabs2.py::test_example --device="Galaxy S9+"
 
 from playwright.sync_api import Page, expect
 from ...core.loggingSetup import setup_logging
@@ -23,13 +26,8 @@ def test_example(page_context):
         expect(page.locator("[data-test=\"title\"]")).to_contain_text("Products")
         
     finally:
-        # Stop tracing and save it to a file
-        trace_name = 'trace_example2.zip'
-        trace_dir_name = 'module_b'
-        save_trace(context, trace_dir_name, trace_name)
-        
         # Log the location of the trace file
-        logger.info(f"Open trace: playwright show-trace tests/playwright/traces/{trace_dir_name}/{trace_name}")
+        logger.info(f"Open trace: playwright show-trace tests/playwright/traces/module_b/trace_test_example3.zip")
         
         
         
