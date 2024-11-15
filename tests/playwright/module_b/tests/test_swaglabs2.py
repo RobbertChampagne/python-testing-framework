@@ -12,18 +12,16 @@ from ...core.utils import save_trace
 # Setup logging configuration
 logger = logging.getLogger("Module B")
 
-def test_example(page_context):
+def test_example3(page_context):
     try:
         # Log the start of the test
         logger.info("Starting test")
         
         # Unpack the page and context from the fixture
-        page, context = page_context
+        page = page_context
         
         # Perform assertions on the page content
-        page.locator("[data-test=\"add-to-cart-sauce-labs-backpack\"]").click()
-        page.locator("[data-test=\"add-to-cart-sauce-labs-bike-light\"]").click()
-        expect(page.locator("[data-test=\"title\"]")).to_contain_text("Products")
+        page.locator("[data-test=\"add-to-cart-test\\.allthethings\\(\\)-t-shirt-\\(red\\)\"]").click()
         
     finally:
         # Log the location of the trace file

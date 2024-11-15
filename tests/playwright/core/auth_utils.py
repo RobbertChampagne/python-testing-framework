@@ -24,7 +24,7 @@ def ensure_auth_state(playwright: Playwright, browser_name: str, headless: bool,
     trace_dir_name = 'module_b'
         
     # Create a headless browser for the authentication check (set to True)
-    headless_browser = select_browser(playwright, browser_name, False)
+    headless_browser = select_browser(playwright, browser_name, True)
     
     try:
         # Use the saved state.json for the browser context
