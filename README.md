@@ -56,6 +56,53 @@ dir /s /b activate
 ```
 [↑ Back to top](#top)
 
+# PYTHONPATH
+**Will only apply to the current terminal session.<br>**
+Once you close the terminal, the environment variable will no longer be set.
+
+### Modifying the PYTHONPATH environment variable:
+Because running tests from the root folder the relative imports in your `conftest.py` file are not resolving correctly.<br> 
+When running tests from the root folder, Python needs to know where to find the modules and packages in your project.<br> 
+
+By modifying the **PYTHONPATH** environment variable or **sys.path**, you ensure that Python can locate the necessary modules and packages,<br>
+regardless of where the tests are run from.
+
+**PYTHONPATH**:
+- Is an environment variable that specifies the search path for Python modules.<br> 
+When you run a Python script, Python uses the directories listed in **PYTHONPATH** to locate modules and packages.
+- By setting **PYTHONPATH** to the current directory, you ensure that Python can find the modules and packages in your project.
+
+**%cd%**:
+- Is a Windows command prompt variable that represents the current directory.<br> 
+When you use **%cd%** in a command, it is replaced with the full path of the current directory.
+- For example, if your current directory is `C:\Users\..\..\..\opleiding-playwright-python`,<br>
+**%cd%** will be replaced with `C:\Users\..\..\..\opleiding-playwright-python`.
+
+```Bash
+cd C:\Users\..\..\..\opleiding-playwright-python
+set PYTHONPATH=%cd%
+```
+
+**Relative Imports**:<br>
+Specify the path to the module relative to the current module's location.<br>
+They use dots (`..`) to indicate the current and parent directories.
+
+In the `opleiding-playwright-python\tests\standalone_test_scripts\conftest.py` file, you are using an absolute import.<br>
+This works because the core directory is at the top level of your project,<br> 
+and Python can resolve this path correctly when the **PYTHONPATH** or **sys.path** includes the project's root directory.
+```Python
+from core.loggingSetup import setup_logging
+```
+
+In the `opleiding-playwright-python\tests\playwright\module_a\conftest.py` file, you are using a relative import.<br>
+This is necessary because the `conftest.py` file is nested within the `module_a` directory,<br> 
+and you need to navigate up one level to access the core directory.
+```Python
+from ..core.loggingSetup import setup_logging
+```
+
+[↑ Back to top](#top)
+
 # Running tests
 
 Running all tests in a directory:
