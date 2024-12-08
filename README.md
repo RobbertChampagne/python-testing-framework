@@ -1214,7 +1214,7 @@ def ensure_auth_state(playwright: Playwright, browser_name: str, headless: bool,
     trace_dir_name = 'module_b'
         
     # Create a headless browser for the authentication check (set to True)
-    headless_browser = select_browser(playwright, browser_name, False)
+    headless_browser = select_browser(playwright, browser_name, True)
     
     try:
         # Use the saved state.json for the browser context
@@ -1229,13 +1229,18 @@ def ensure_auth_state(playwright: Playwright, browser_name: str, headless: bool,
         # Perform a simple check to ensure the state is valid
         try:
             expect(page.locator("[data-test=\"title\"]")).to_contain_text("Products", timeout=5000)
-            page.close()  # Close the initial page after the check
-            save_trace(context, trace_dir_name, trace_name) # Stop tracing and save the trace
-            context.close()  # Close the headless context
-            headless_browser.close()  # Close the headless browser
+            # Close the initial page after the check
+            page.close()  
+            # Stop tracing and save the trace
+            save_trace(context, trace_dir_name, trace_name) 
+            # Close the headless context
+            context.close()  
+            # Close the headless browser
+            headless_browser.close()  
             # Create a new context for the actual test
             browser = select_browser(playwright, browser_name, headless)
-            return browser.new_context(storage_state=state_path)  # Return the context immediately if the state is valid
+            # Return the context immediately if the state is valid
+            return browser.new_context(storage_state=state_path)  
         except TimeoutError:
             logging.warning("State is invalid or expired. Recreating state.json.")
             raise Exception("State is invalid or expired.")
@@ -1268,7 +1273,12 @@ def ensure_auth_state(playwright: Playwright, browser_name: str, headless: bool,
         context.storage_state(path=state_path)
         page.close()  # Close the initial page after the check
     
-    return context
+    # Close the headless browser after recreating the state
+    headless_browser.close()
+    
+    # Create a new context for the actual test
+    browser = select_browser(playwright, browser_name, headless)
+    return browser.new_context(storage_state=state_path)
 ```
 
 `test_swaglabs.py` 
@@ -1355,8 +1365,6 @@ def save_trace(context, trace_dir_name, trace_name):
 ```Python
 def test_example(page_context: Page):
     try:
-        ...
-
         # Unpack the page and context from the fixture
         page, context = page_context
         
